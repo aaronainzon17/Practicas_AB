@@ -9,29 +9,31 @@
 #include <vector>
 #include <string>
 #include <sstream>
+#include <algorithm>
 #include <unordered_map>
 
 using namespace std;
 
 // Procedimiento de lectura de matriz de distancias
-bool leerMatriz(string nombreFichero, vector<vector<int>*> &matrizDistancias, vector<int> &nodos){
+bool leerMatriz(const string nombreFichero, unordered_map<int, unordered_map<int,int>*> &matrizDistancias, int &nNodos){
     // Abrimos el fichero de entrada
     ifstream f_entrada(nombreFichero);
     // Si el fichero de entrada se ha abierto correctamente
     if(f_entrada.is_open()){
-        int nodo = 1;
         string line;
         // Leer linea de entrada
+        nNodos = 0;
         while(getline(f_entrada,line)){
             // Separar distancias
-            vector<int>* lineDistance = new vector<int>;
+            unordered_map<int,int>* lineDistance = new unordered_map<int,int>;
             istringstream iss(line);
-            matrizDistancias.push_back(lineDistance);
+            nNodos++;
+            matrizDistancias[nNodos] = lineDistance;
+            int column=1;
             for (int distance; iss >> distance; ){
-                lineDistance->push_back(distance);
+                (*lineDistance)[column] = distance;
+                column++;
             }
-            nodos.push_back(nodo);
-            nodo++;
         }
         // Cerramos el fichero de entrada
         f_entrada.close();
@@ -42,37 +44,69 @@ bool leerMatriz(string nombreFichero, vector<vector<int>*> &matrizDistancias, ve
 }
 
 // Procedimiento para mostrar la matriz de distancias
-void mostrarMatriz(vector<vector<int>*> &matrizDistancias){
-     for (vector<vector<int>*>::iterator itRows = matrizDistancias.begin() ; itRows != matrizDistancias.end(); ++itRows){
-         for (vector<int>::iterator itColumns = (*itRows)->begin() ; itColumns != (*itRows)->end(); ++itColumns){
-            std::cout << *itColumns << ' ';
-         }
-         std::cout << '\n';
+void mostrarMatriz(unordered_map<int, unordered_map<int,int>*> &matrizDistancias, const int nNodos){
+     for (int i=1; i<=nNodos; i++){
+        for (int j=1; j<=nNodos; j++){
+            cout << (*matrizDistancias[i])[j] << " " ;
+        }
+         cout << '\n';
      }
 }
 
+void inicializarCandiatos( const int nNodos, vector<int> &candidatos){
+    for (int i=2; i<=nNodos; i++){
+        candidatos.push_back(i);
+    }
+}
+
+void mostrarSolucion(vector<int>* camino, int &distancia){
+    cout<< "Minimal tour length: " << distancia << endl;
+    cout << "Itinerary: 1-";
+    for (vector<int>::iterator it = camino->begin() ; it != camino->end(); ++it){
+        if((*it) != 1){
+            cout << *it << "-";
+        }
+    }
+    cout << "1\n";
+}
 
 // Procedimiento que resuelve por fuerza bruta el problema del viajante de comercio
-void fuerzaBruta(vector<vector<int>*> &matrizDistancias, vector<int> &nodos, int &distancia, vector<int> &solucion){
-    int row, column=0;
-    for (vector<vector<int>*>::iterator itRows = matrizDistancias.begin() ; itRows != matrizDistancias.end(); ++itRows){
-        row=0;
-         for (vector<int>::iterator itColumns = (*itRows)->begin() ; itColumns != (*itRows)->end(); ++itColumns){
-            std::cout << *itColumns << ' ';
-         }
-         std::cout << '\n';
-     }
+void fuerzaBruta(unordered_map<int, unordered_map<int,int>*> &matrizDistancias,const int nNodos, vector<int>* &mejorCamino, int &mejorDistancia){
+    vector<int> candidatos;
+    inicializarCandiatos(nNodos,candidatos);
+    int anterior;
+    int distancia;
+    mejorDistancia = 2147483647; // Maximo valor de un entero
+    while(std::next_permutation(candidatos.begin(), candidatos.end())){
+        vector<int>* camino = new vector<int>;
+        camino->push_back(1);
+        distancia = 0;
+        for (vector<int>::iterator it = candidatos.begin() ; it != candidatos.end(); ++it){
+            anterior=camino->back();
+            camino->push_back(*it);
+            distancia += (*matrizDistancias[anterior])[*it];
+        }
+        anterior=camino->back();
+        distancia += (*matrizDistancias[anterior])[1];
+        camino->push_back(1);
+        if(distancia < mejorDistancia){
+            mejorCamino = camino;
+            mejorDistancia = distancia;
+            //mostrarSolucion(&camino,distancia);
+        }
+    }
 }
 
-void algoritmoVoraz(vector<vector<int>*> &matrizDistancias){
+
+void algoritmoVoraz(unordered_map<int, unordered_map<int,int>*> &matrizDistancias){
 
 }
 
-void programacionFinamica(vector<vector<int>*> &matrizDistancias){
+void programacionFinamica(unordered_map<int, unordered_map<int,int>*> &matrizDistancias){
 
 }
 
-void ramificacionPoda(vector<vector<int>*> &matrizDistancias){
+void ramificacionPoda(unordered_map<int, unordered_map<int,int>*> &matrizDistancias){
 
 }
 
@@ -80,14 +114,14 @@ int main(int argc, char *argv[] ){
     if(argc == 3){
         string opt = argv[1];
         string nombreFichero = argv[2];
-        vector<vector<int>*> matrizDistancias;
-        vector<int> nodos;
-        vector<int> solucion;
+        unordered_map<int, unordered_map<int,int>*> matrizDistancias;
+        int nNodos;
+        vector<int>* camino;
         int distancia;
-        leerMatriz(nombreFichero, matrizDistancias,nodos);
-        //mostrarMatriz(matrizDistancias);
+        leerMatriz(nombreFichero, matrizDistancias,nNodos);
+        //mostrarMatriz(matrizDistancias,nNodos);
         if (opt == "-fb"){      // Fuerza Bruta
-            fuerzaBruta(matrizDistancias,nodos,distancia,solucion);        
+            fuerzaBruta(matrizDistancias,nNodos,camino,distancia);       
         }else if(opt == "-av"){ // Algortimo Voraz
             algoritmoVoraz(matrizDistancias);
         }else if(opt == "-pd"){ // Programacion Dinamica
@@ -98,6 +132,7 @@ int main(int argc, char *argv[] ){
             cout << "Opcion invalida -> tsp -[fb,av,pd,rp] <nombre de fichero>" << endl;    
             return -1;
         }
+        mostrarSolucion(camino,distancia);
     }
     else{
         cout << "Numero de parametros incorrecto -> tsp -[fb,av,pd,rp] <nombre de fichero>" << endl;    
