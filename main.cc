@@ -10,6 +10,7 @@
 #include <string>
 #include <sstream>
 #include <algorithm>
+#include <chrono>
 #include <unordered_map>
 
 using namespace std;
@@ -59,7 +60,7 @@ void inicializarCandiatos( const int nNodos, vector<int> &candidatos){
     }
 }
 
-void mostrarSolucion(vector<int>* camino, int &distancia){
+void mostrarSolucion(vector<int>* camino, int &distancia, std::chrono::microseconds &tEjecucion){
     cout<< "Minimal tour length: " << distancia << endl;
     cout << "Itinerary: 1-";
     for (vector<int>::iterator it = camino->begin() ; it != camino->end(); ++it){
@@ -67,7 +68,9 @@ void mostrarSolucion(vector<int>* camino, int &distancia){
             cout << *it << "-";
         }
     }
+    double tEjec = tEjecucion.count();
     cout << "1\n";
+    cout << "Tiempo de ejecucion: " <<  tEjec << " microsegundos" << endl;
 }
 
 // Procedimiento que resuelve por fuerza bruta el problema del viajante de comercio
@@ -114,12 +117,14 @@ int main(int argc, char *argv[] ){
     if(argc == 3){
         string opt = argv[1];
         string nombreFichero = argv[2];
+        std::chrono::microseconds tEjecucion;
         unordered_map<int, unordered_map<int,int>*> matrizDistancias;
         int nNodos;
         vector<int>* camino;
         int distancia;
         leerMatriz(nombreFichero, matrizDistancias,nNodos);
         //mostrarMatriz(matrizDistancias,nNodos);
+        std::chrono::steady_clock::time_point start = chrono::steady_clock::now();
         if (opt == "-fb"){      // Fuerza Bruta
             fuerzaBruta(matrizDistancias,nNodos,camino,distancia);       
         }else if(opt == "-av"){ // Algortimo Voraz
@@ -132,7 +137,9 @@ int main(int argc, char *argv[] ){
             cout << "Opcion invalida -> tsp -[fb,av,pd,rp] <nombre de fichero>" << endl;    
             return -1;
         }
-        mostrarSolucion(camino,distancia);
+        std::chrono::steady_clock::time_point end = chrono::steady_clock::now();
+        tEjecucion = chrono::duration_cast<chrono::microseconds>(end - start);
+        mostrarSolucion(camino,distancia,tEjecucion);
     }
     else{
         cout << "Numero de parametros incorrecto -> tsp -[fb,av,pd,rp] <nombre de fichero>" << endl;    
