@@ -101,8 +101,33 @@ void fuerzaBruta(unordered_map<int, unordered_map<int,int>*> &matrizDistancias,c
 }
 
 
-void algoritmoVoraz(unordered_map<int, unordered_map<int,int>*> &matrizDistancias){
-
+void algoritmoVoraz(unordered_map<int, unordered_map<int,int>*> &matrizDistancias,const int nNodos, vector<int>* &mejorCamino, int &mejorDistancia){
+    bool visited[nNodos] = {false};
+    int localMin; 
+    int index = 1;
+    int distancia = 0;
+    vector<int>* camino = new vector<int>;
+    for( int i = 0; i < nNodos - 1 ; i++)
+    {
+        visited[(index - 1)] = true;
+        localMin = 2147483647; // Maximo valor de un entero
+        for (auto a : *matrizDistancias[index])
+        {
+            if ((a.first != index) && (a.first != 1) && (visited[a.first - 1] == false)){
+                if(a.second < localMin)
+                {
+                    localMin = a.second;
+                    index = a.first;
+                }
+            }
+        }
+        distancia += localMin; 
+        camino->push_back(index);
+    }
+    visited[(index - 1)] = true;
+    distancia += (*matrizDistancias[index])[1];
+    mejorCamino = camino;
+    mejorDistancia = distancia;
 }
 
 void programacionFinamica(unordered_map<int, unordered_map<int,int>*> &matrizDistancias){
@@ -128,7 +153,7 @@ int main(int argc, char *argv[] ){
         if (opt == "-fb"){      // Fuerza Bruta
             fuerzaBruta(matrizDistancias,nNodos,camino,distancia);       
         }else if(opt == "-av"){ // Algortimo Voraz
-            algoritmoVoraz(matrizDistancias);
+            algoritmoVoraz(matrizDistancias,nNodos,camino,distancia);
         }else if(opt == "-pd"){ // Programacion Dinamica
             programacionFinamica(matrizDistancias);
         }else if(opt == "-rp"){ // Ramificacion y Poda
