@@ -113,7 +113,7 @@ void algoritmoVoraz(unordered_map<int, unordered_map<int,int>*> &matrizDistancia
         localMin = 2147483647; // Maximo valor de un entero
         for (auto a : *matrizDistancias[index])
         {
-            if ((a.first != index) && (a.first != 1) && (visited[a.first - 1] == false)){
+            if ((a.first != index) && (visited[a.first - 1] == false)){
                 if(a.second < localMin)
                 {
                     localMin = a.second;
