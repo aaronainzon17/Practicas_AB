@@ -15,6 +15,47 @@
 
 using namespace std;
 
+struct Recorrido{
+    int distancia;
+    vector<int>* camino;
+};
+
+// Struct clave compuesta
+struct PairKey
+{
+    int first;
+    vector<int>* second;
+    int sum;
+    int numEl;
+ 
+    PairKey(int _first, vector<int>* _second)
+    {
+        first=_first;
+        second=_second;
+        sum=0;
+        for (vector<int>::iterator it = _second->begin() ; it != _second->end(); ++it){
+                    sum += hash<int>()(*it);
+        }
+        numEl = _second->size();
+    }
+
+    bool operator==(const PairKey &pk) const {
+        return first == pk.first && numEl == pk.numEl && sum == pk.sum;
+    }
+};
+
+// Struct Hash para el struct PairKey
+struct pairKeyHash
+{
+    size_t operator() (const PairKey &clave) const
+    {
+        size_t hash_first = hash<int>()(clave.first);
+        size_t hash_third = hash<int>()(clave.numEl);
+        return hash_first ^ clave.sum ^ hash_third;
+    }
+};
+
+
 // Procedimiento de lectura de matriz de distancias
 bool leerMatriz(const string nombreFichero, unordered_map<int, unordered_map<int,int>*> &matrizDistancias, int &nNodos){
     // Abrimos el fichero de entrada
@@ -95,7 +136,6 @@ void fuerzaBruta(unordered_map<int, unordered_map<int,int>*> &matrizDistancias,c
         if(distancia < mejorDistancia){
             mejorCamino = camino;
             mejorDistancia = distancia;
-            //mostrarSolucion(&camino,distancia);
         }
     }
 }
@@ -130,8 +170,49 @@ void algoritmoVoraz(unordered_map<int, unordered_map<int,int>*> &matrizDistancia
     mejorDistancia = distancia;
 }
 
-void programacionFinamica(unordered_map<int, unordered_map<int,int>*> &matrizDistancias){
+Recorrido* programacionDinamicaPrima(unordered_map<int, unordered_map<int,int>*> &matrizDistancias, 
+                                unordered_map<PairKey,Recorrido*,pairKeyHash> &gtab,
+                                int i, vector<int>* &S){
+    Recorrido* recorrido = new Recorrido;
+    if (S->empty()){
+        recorrido->distancia = (*matrizDistancias[i])[1];
+        recorrido->camino = new vector<int>;
+        recorrido->camino->push_back(1);
+        return recorrido;
+    }else{
+        PairKey key(i,S);
+        auto element = gtab.find(key);
+        if (element != gtab.end()){
+            return(element->second);
+        }
+        else{
+            recorrido->distancia=2147483647;
+            for (vector<int>::iterator j = S->begin() ; j != S->end(); ++j){
+                int actual = *j;
+                *j = *S->begin();
+                *S->begin() = actual;
+                vector<int>* Sprima = new vector<int>(S->begin()+1,S->end()); // Falta sacar j de S
+                Recorrido* candidato;
+                candidato = programacionDinamicaPrima(matrizDistancias,gtab,actual,Sprima);
+                candidato->distancia += (*matrizDistancias[i])[actual];
+                if(candidato->distancia < recorrido->distancia){
+                    recorrido->camino=candidato->camino;
+                    recorrido->distancia=candidato->distancia;
+                    recorrido->camino->push_back(actual);
+                }
+            }
+            gtab[key] = recorrido;
+            return recorrido;
+        }
+    }
+    return recorrido;
+}
 
+Recorrido* programacionDinamica(unordered_map<int, unordered_map<int,int>*> &matrizDistancias, int N){
+        vector<int>* S = new vector<int>;
+        inicializarCandiatos(N,*S);
+        unordered_map<PairKey,Recorrido*,pairKeyHash> gtab;
+        return programacionDinamicaPrima(matrizDistancias,gtab,1,S);
 }
 
 void ramificacionPoda(unordered_map<int, unordered_map<int,int>*> &matrizDistancias){
@@ -142,29 +223,34 @@ int main(int argc, char *argv[] ){
     if(argc == 3){
         string opt = argv[1];
         string nombreFichero = argv[2];
-        std::chrono::microseconds tEjecucion;
         unordered_map<int, unordered_map<int,int>*> matrizDistancias;
-        int nNodos;
+        int nNodos, distancia;
         vector<int>* camino;
-        int distancia;
-        leerMatriz(nombreFichero, matrizDistancias,nNodos);
-        //mostrarMatriz(matrizDistancias,nNodos);
-        std::chrono::steady_clock::time_point start = chrono::steady_clock::now();
-        if (opt == "-fb"){      // Fuerza Bruta
-            fuerzaBruta(matrizDistancias,nNodos,camino,distancia);       
-        }else if(opt == "-av"){ // Algortimo Voraz
-            algoritmoVoraz(matrizDistancias,nNodos,camino,distancia);
-        }else if(opt == "-pd"){ // Programacion Dinamica
-            programacionFinamica(matrizDistancias);
-        }else if(opt == "-rp"){ // Ramificacion y Poda
-            ramificacionPoda(matrizDistancias);
-        }else{
-            cout << "Opcion invalida -> tsp -[fb,av,pd,rp] <nombre de fichero>" << endl;    
-            return -1;
+        std::chrono::microseconds tEjecucion;
+        if(leerMatriz(nombreFichero, matrizDistancias,nNodos)){
+            std::chrono::steady_clock::time_point start = chrono::steady_clock::now();
+            if (opt == "-fb"){      // Fuerza Bruta
+                fuerzaBruta(matrizDistancias,nNodos,camino,distancia);       
+            }else if(opt == "-av"){ // Algortimo Voraz
+                algoritmoVoraz(matrizDistancias,nNodos,camino,distancia);
+            }else if(opt == "-pd"){ // Programacion Dinamica
+                Recorrido* solucion = programacionDinamica(matrizDistancias,nNodos);
+                distancia = solucion->distancia;
+                camino = solucion->camino;
+            }else if(opt == "-rp"){ // Ramificacion y Poda
+                ramificacionPoda(matrizDistancias);
+            }else{
+                cout << "Opcion " << opt << " es invalida -> tsp -[fb,av,pd,rp] <nombre de fichero>" << endl;    
+                return -1;
+            }
+            std::chrono::steady_clock::time_point end = chrono::steady_clock::now();
+            tEjecucion = chrono::duration_cast<chrono::microseconds>(end - start);
+            mostrarSolucion(camino,distancia,tEjecucion);
         }
-        std::chrono::steady_clock::time_point end = chrono::steady_clock::now();
-        tEjecucion = chrono::duration_cast<chrono::microseconds>(end - start);
-        mostrarSolucion(camino,distancia,tEjecucion);
+        else{
+            cout << "No se pudo abrir el fichero " << nombreFichero << " -> tsp -[fb,av,pd,rp] <nombre de fichero>" << endl;    
+            return -1;    
+        }
     }
     else{
         cout << "Numero de parametros incorrecto -> tsp -[fb,av,pd,rp] <nombre de fichero>" << endl;    
