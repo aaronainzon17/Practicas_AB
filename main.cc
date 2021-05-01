@@ -178,12 +178,12 @@ Recorrido* programacionDinamicaPrima(unordered_map<int, unordered_map<int,int>*>
         recorrido->distancia = (*matrizDistancias[i])[1];
         recorrido->camino = new vector<int>;
         recorrido->camino->push_back(1);
-        return recorrido;
     }else{
         PairKey key(i,S);
         auto element = gtab.find(key);
         if (element != gtab.end()){
-            return(element->second);
+            recorrido->camino = new vector<int>(*element->second->camino);
+            recorrido->distancia=element->second->distancia;
         }
         else{
             recorrido->distancia=2147483647;
@@ -196,13 +196,12 @@ Recorrido* programacionDinamicaPrima(unordered_map<int, unordered_map<int,int>*>
                 candidato = programacionDinamicaPrima(matrizDistancias,gtab,actual,Sprima);
                 candidato->distancia += (*matrizDistancias[i])[actual];
                 if(candidato->distancia < recorrido->distancia){
-                    recorrido->camino=candidato->camino;
+                    recorrido->camino=new vector<int>(*candidato->camino);
                     recorrido->distancia=candidato->distancia;
                     recorrido->camino->push_back(actual);
                 }
             }
             gtab[key] = recorrido;
-            return recorrido;
         }
     }
     return recorrido;
