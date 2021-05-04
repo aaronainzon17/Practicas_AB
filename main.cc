@@ -34,13 +34,13 @@ struct PairKey
         second=_second;
         sum=0;
         for (vector<int>::iterator it = _second->begin() ; it != _second->end(); ++it){
-                    sum += hash<int>()(*it);
+                    sum = sum + (1<<(*it));
         }
         numEl = _second->size();
     }
 
     bool operator==(const PairKey &pk) const {
-        return first == pk.first && numEl == pk.numEl && sum == pk.sum;
+        return (first == pk.first) && (numEl == pk.numEl) && (sum == pk.sum);
     }
 };
 
@@ -50,8 +50,9 @@ struct pairKeyHash
     size_t operator() (const PairKey &clave) const
     {
         size_t hash_first = hash<int>()(clave.first);
+        size_t hash_second = hash<int>()(clave.sum);
         size_t hash_third = hash<int>()(clave.numEl);
-        return hash_first ^ clave.sum ^ hash_third;
+        return hash_first ^ hash_second ^ hash_third;
     }
 };
 
@@ -174,10 +175,13 @@ Recorrido* programacionDinamicaPrima(unordered_map<int, unordered_map<int,int>*>
                                 unordered_map<PairKey,Recorrido*,pairKeyHash> &gtab,
                                 int i, vector<int>* &S){
     Recorrido* recorrido = new Recorrido;
+    int distancia;
+    int actual;
     if (S->empty()){
         recorrido->distancia = (*matrizDistancias[i])[1];
         recorrido->camino = new vector<int>;
         recorrido->camino->push_back(1);
+        recorrido->camino->push_back(i);
     }else{
         PairKey key(i,S);
         auto element = gtab.find(key);
@@ -188,19 +192,19 @@ Recorrido* programacionDinamicaPrima(unordered_map<int, unordered_map<int,int>*>
         else{
             recorrido->distancia=2147483647;
             for (vector<int>::iterator j = S->begin() ; j != S->end(); ++j){
-                int actual = *j;
+                actual = *j;
                 *j = *S->begin();
                 *S->begin() = actual;
                 vector<int>* Sprima = new vector<int>(S->begin()+1,S->end()); // Falta sacar j de S
                 Recorrido* candidato;
                 candidato = programacionDinamicaPrima(matrizDistancias,gtab,actual,Sprima);
-                candidato->distancia += (*matrizDistancias[i])[actual];
-                if(candidato->distancia < recorrido->distancia){
+                distancia = candidato->distancia + (*matrizDistancias[i])[actual];
+                if(distancia < recorrido->distancia){
                     recorrido->camino=new vector<int>(*candidato->camino);
-                    recorrido->distancia=candidato->distancia;
-                    recorrido->camino->push_back(actual);
+                    recorrido->distancia=distancia;
                 }
             }
+            recorrido->camino->push_back(i);
             gtab[key] = recorrido;
         }
     }
