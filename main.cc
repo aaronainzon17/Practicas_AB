@@ -12,6 +12,7 @@
 #include <algorithm>
 #include <chrono>
 #include <unordered_map>
+#include <queue>
 
 using namespace std;
 #define INF 2147483647 // Maximo valor de un entero
@@ -68,14 +69,14 @@ public:
 
 int reducirFila (unordered_map<int, unordered_map<int,int>> &matriz, int nFila, int nNodos){
     
-    int min = (matriz[nFila])[0];
-    for (int i = 1; i < nNodos; i++){
+    int min = (matriz[nFila])[1];
+    for (int i = 2; i <=nNodos; i++){
         if ((matriz[nFila])[i] < min){
             min = matriz[nFila][i];
         }
     }
     if (min != INF){
-        for (int i = 0; i < nNodos; i++){
+        for (int i = 1; i <=nNodos; i++){
             if ((matriz[nFila])[i] != INF){
                 (matriz[nFila])[i] -= min;
             }
@@ -87,14 +88,14 @@ int reducirFila (unordered_map<int, unordered_map<int,int>> &matriz, int nFila, 
 }
 
 int reducirColumna (unordered_map<int, unordered_map<int,int>> &matriz, int nCol, int nNodos){
-    int min = (matriz[0])[nCol];
-    for (int i = 1; i < nNodos; i++){
+    int min = (matriz[1])[nCol];
+    for (int i = 2; i <=nNodos; i++){
         if ((matriz[i])[nCol] < min){
             min = (matriz[i])[nCol];
         }
     }
     if (min != INF){
-        for (int i = 0; i < nNodos; i++){
+        for (int i = 1; i <=nNodos; i++){
             if ((matriz[i])[nCol] != INF){
                 (matriz[i])[nCol] -= min; 
             }
@@ -107,39 +108,44 @@ int reducirColumna (unordered_map<int, unordered_map<int,int>> &matriz, int nCol
 
 int coste (unordered_map<int, unordered_map<int,int>>  &matriz, int nNodos){
     int coste = 0;
-    int redFila = 0;
-    int redColum = 0;
-    for (int i = 0; i < nNodos; i++){
+    //Se reducen las filas de la matriz
+    for (int i = 1; i <=nNodos; i++){
         coste += reducirFila(matriz,i,nNodos);
     }
-    for (int j = 0; j < nNodos; j++){
+    //Se reducen las columnas de la matriz (solamnete se reducen las que todavia estan sin reducir) 
+    for (int j = 1; j <=nNodos; j++){
         coste += reducirColumna(matriz,j,nNodos);
     }
     return coste;
 }
 
-Nodo* crearNodo(unordered_map<int, unordered_map<int,int>> &matriz, vector<int> camino, int nivel, int origen, int destino, int nNodos){
+Nodo* crearNodo(unordered_map<int, unordered_map<int,int>> &matriz, vector<int> camino, int nivel, int origen, int destino, int nNodos){  
     Nodo* nodo = new Nodo;
     nodo->camino = camino;
+    nodo->matrizReducida = matriz;
 
     if (nivel != 0){
         nodo->camino.push_back(destino);
-        for (int i = 0; i < nNodos; i++){
+        for (int i = 1; i <=nNodos; i++){
             nodo->matrizReducida[origen][i] = INF;
             nodo->matrizReducida[i][destino] = INF;
         }
+    }else if (nivel == 0){
+        for (int i = 1; i <=nNodos; i++){
+            nodo->matrizReducida[i][i] = INF;
+        }
     }
-    nodo->matrizReducida = matriz;
-    nodo->matrizReducida[destino][0] = INF;
+
+    nodo->matrizReducida[destino][1] = INF;
     nodo->nivel = nivel;
-    nodo->ciudadActual = destino;
+    nodo->ciudadActual = destino; 
     return nodo;
 }
 
 class comp {
 public:
-    bool operator()(const Nodo* lhs, const Nodo* rhs) const {
-        return lhs->coste > rhs->coste;
+    bool operator()(const Nodo* nodo1, const Nodo* nodo2) const {
+        return nodo1->coste > nodo2->coste;
     }
 };
 
@@ -304,8 +310,42 @@ Recorrido* programacionDinamica(unordered_map<int, unordered_map<int,int>*> &mat
         return programacionDinamicaPrima(matrizDistancias,gtab,1,S);
 }
 
-void ramificacionPoda(unordered_map<int, unordered_map<int,int>*> &matrizDistancias){
+Nodo* ramificacionPoda(unordered_map<int, unordered_map<int,int>*> &matrizDistancias, int nNodos){
+    //Se crea una cola con prioridad de nodos vivos
+    priority_queue<Nodo*,vector<Nodo*>,comp> pq;
+    unordered_map<int, unordered_map<int,int>> m;
+    //Se copia la matriz
+    for (int i=1; i<=nNodos; i++){
+        for (int j=1; j<=nNodos; j++){
+            m[i][j] = (*matrizDistancias[i])[j];
+        }
+     }
+    //Se crea el nodo raiz
+    vector<int> camino;
+    Nodo* raiz = crearNodo(m,camino,0,-1,1,nNodos);
+    raiz->coste = coste(raiz->matrizReducida,nNodos);
+    pq.push(raiz);
 
+    while(!pq.empty()){
+        Nodo* minimo = pq.top();
+        pq.pop();
+        int cuidadActual = minimo->ciudadActual;
+        //Si se han visitado todas las ciudades
+        if(minimo->nivel == (nNodos -1)){
+            //COMO ESTA SIEMPRE ORDENADO POR COSTE, NO ES NECESARIA UNA FUCNION DE COTA YA QUE SIEMPRE 
+            //SE VA A COGER EL DE MENOR COSTE
+            return minimo;
+        }
+        for (int i = 1; i <=nNodos; i++){
+            if(minimo->matrizReducida[cuidadActual][i] != INF){       
+                Nodo* hijo = crearNodo(minimo->matrizReducida, minimo->camino, minimo->nivel + 1, cuidadActual, i, nNodos);
+                hijo->coste = minimo->coste + minimo->matrizReducida[cuidadActual][i] + coste(hijo->matrizReducida,nNodos);
+                pq.push(hijo);
+            }
+        }
+        delete minimo;
+    }
+    return 0;
 }
 
 int main(int argc, char *argv[] ){
@@ -327,7 +367,9 @@ int main(int argc, char *argv[] ){
                 distancia = solucion->distancia;
                 camino = solucion->camino;
             }else if(opt == "-rp"){ // Ramificacion y Poda
-                ramificacionPoda(matrizDistancias);
+                Nodo* sol = ramificacionPoda(matrizDistancias,nNodos);
+                camino = new vector<int>(sol->camino);
+                distancia = sol->coste;
             }else{
                 cout << "Opcion " << opt << " es invalida -> tsp -[fb,av,pd,rp] <nombre de fichero>" << endl;    
                 return -1;
