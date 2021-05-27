@@ -14,6 +14,7 @@
 #include <unordered_map>
 
 using namespace std;
+#define INF 2147483647 // Maximo valor de un entero
 
 struct Recorrido{
     int distancia;
@@ -56,9 +57,94 @@ struct pairKeyHash
     }
 };
 
+class Nodo {
+public: 
+    int ciudadActual;
+    vector<int> camino;
+    unordered_map<int, unordered_map<int,int>> matrizReducida;
+    int coste;
+    int nivel;
+};
+
+int reducirFila (unordered_map<int, unordered_map<int,int>> &matriz, int nFila, int nNodos){
+    
+    int min = (matriz[nFila])[0];
+    for (int i = 1; i < nNodos; i++){
+        if ((matriz[nFila])[i] < min){
+            min = matriz[nFila][i];
+        }
+    }
+    if (min != INF){
+        for (int i = 0; i < nNodos; i++){
+            if ((matriz[nFila])[i] != INF){
+                (matriz[nFila])[i] -= min;
+            }
+        } 
+        return min; 
+    }else {
+        return 0;
+    }    
+}
+
+int reducirColumna (unordered_map<int, unordered_map<int,int>> &matriz, int nCol, int nNodos){
+    int min = (matriz[0])[nCol];
+    for (int i = 1; i < nNodos; i++){
+        if ((matriz[i])[nCol] < min){
+            min = (matriz[i])[nCol];
+        }
+    }
+    if (min != INF){
+        for (int i = 0; i < nNodos; i++){
+            if ((matriz[i])[nCol] != INF){
+                (matriz[i])[nCol] -= min; 
+            }
+        }        
+        return min;
+    }else {
+        return 0;
+    }
+}
+
+int coste (unordered_map<int, unordered_map<int,int>>  &matriz, int nNodos){
+    int coste = 0;
+    int redFila = 0;
+    int redColum = 0;
+    for (int i = 0; i < nNodos; i++){
+        coste += reducirFila(matriz,i,nNodos);
+    }
+    for (int j = 0; j < nNodos; j++){
+        coste += reducirColumna(matriz,j,nNodos);
+    }
+    return coste;
+}
+
+Nodo* crearNodo(unordered_map<int, unordered_map<int,int>> &matriz, vector<int> camino, int nivel, int origen, int destino, int nNodos){
+    Nodo* nodo = new Nodo;
+    nodo->camino = camino;
+
+    if (nivel != 0){
+        nodo->camino.push_back(destino);
+        for (int i = 0; i < nNodos; i++){
+            nodo->matrizReducida[origen][i] = INF;
+            nodo->matrizReducida[i][destino] = INF;
+        }
+    }
+    nodo->matrizReducida = matriz;
+    nodo->matrizReducida[destino][0] = INF;
+    nodo->nivel = nivel;
+    nodo->ciudadActual = destino;
+    return nodo;
+}
+
+class comp {
+public:
+    bool operator()(const Nodo* lhs, const Nodo* rhs) const {
+        return lhs->coste > rhs->coste;
+    }
+};
 
 // Procedimiento de lectura de matriz de distancias
-bool leerMatriz(const string nombreFichero, unordered_map<int, unordered_map<int,int>*> &matrizDistancias, int &nNodos){
+bool leerMatriz(const string nombreFichero, unordered_map<int, unordered_map<int,int>*> &matrizDistancias, int &nNodos){ //int matrizDistancias[nNodos][nNodos]
     // Abrimos el fichero de entrada
     ifstream f_entrada(nombreFichero);
     // Si el fichero de entrada se ha abierto correctamente
