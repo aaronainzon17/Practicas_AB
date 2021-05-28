@@ -59,21 +59,21 @@ class Nodo {
 public: 
     int ciudadActual;
     vector<int> camino;
-    unordered_map<int, unordered_map<int,int>> matrizReducida;
+    vector<vector<int>> matrizReducida;
     int coste;
     int nivel;
 };
 
-int reducirFila (unordered_map<int, unordered_map<int,int>> &matriz, int nFila, int nNodos){
+int reducirFila (vector<vector<int>> &matriz, int nFila, int nNodos){
     
-    int min = (matriz[nFila])[1];
-    for (int i = 2; i <=nNodos; i++){
+    int min = (matriz[nFila])[0];
+    for (int i = 1; i < nNodos; i++){
         if ((matriz[nFila])[i] < min){
             min = matriz[nFila][i];
         }
     }
     if (min != INF){
-        for (int i = 1; i <=nNodos; i++){
+        for (int i = 0; i < nNodos; i++){
             if ((matriz[nFila])[i] != INF){
                 (matriz[nFila])[i] -= min;
             }
@@ -84,15 +84,15 @@ int reducirFila (unordered_map<int, unordered_map<int,int>> &matriz, int nFila, 
     }    
 }
 
-int reducirColumna (unordered_map<int, unordered_map<int,int>> &matriz, int nCol, int nNodos){
-    int min = (matriz[1])[nCol];
-    for (int i = 2; i <=nNodos; i++){
+int reducirColumna (vector<vector<int>> &matriz, int nCol, int nNodos){
+    int min = (matriz[0])[nCol];
+    for (int i = 1; i < nNodos; i++){
         if ((matriz[i])[nCol] < min){
             min = (matriz[i])[nCol];
         }
     }
     if (min != INF){
-        for (int i = 1; i <=nNodos; i++){
+        for (int i = 0; i < nNodos; i++){
             if ((matriz[i])[nCol] != INF){
                 (matriz[i])[nCol] -= min; 
             }
@@ -103,37 +103,38 @@ int reducirColumna (unordered_map<int, unordered_map<int,int>> &matriz, int nCol
     }
 }
 
-int coste (unordered_map<int, unordered_map<int,int>>  &matriz, int nNodos){
+int coste (vector<vector<int>>  &matriz, int nNodos){
     int coste = 0;
     //Se reducen las filas de la matriz
-    for (int i = 1; i <=nNodos; i++){
+    for (int i = 0; i < nNodos; i++){
         coste += reducirFila(matriz,i,nNodos);
     }
     //Se reducen las columnas de la matriz (solamnete se reducen las que todavia estan sin reducir) 
-    for (int j = 1; j <=nNodos; j++){
+    for (int j = 0; j < nNodos; j++){
         coste += reducirColumna(matriz,j,nNodos);
     }
     return coste;
 }
 
-Nodo* crearNodo(unordered_map<int, unordered_map<int,int>> &matriz, vector<int> camino, int nivel, int origen, int destino, int nNodos){  
+Nodo* crearNodo(vector<vector<int>> &matriz, vector<int> camino, int nivel, int origen, int destino, int nNodos){  
     Nodo* nodo = new Nodo;
     nodo->camino = camino;
     nodo->matrizReducida = matriz;
+    //cout << "copia la matriz" << endl;
 
     if (nivel != 0){
         nodo->camino.push_back(destino);
-        for (int i = 1; i <=nNodos; i++){
-            nodo->matrizReducida[origen][i] = INF;
-            nodo->matrizReducida[i][destino] = INF;
+        for (int i = 0; i < nNodos; i++){
+            nodo->matrizReducida[origen - 1][i] = INF;
+            nodo->matrizReducida[i][destino - 1] = INF;
         }
     }else if (nivel == 0){
-        for (int i = 1; i <=nNodos; i++){
+        for (int i = 0; i < nNodos; i++){
             nodo->matrizReducida[i][i] = INF;
         }
     }
 
-    nodo->matrizReducida[destino][1] = INF;
+    nodo->matrizReducida[destino - 1][0] = INF;
     nodo->nivel = nivel;
     nodo->ciudadActual = destino; 
     return nodo;
@@ -328,22 +329,37 @@ Recorrido* programacionDinamica(unordered_map<int, unordered_map<int,int>*> &mat
 Nodo* ramificacionPoda(unordered_map<int, unordered_map<int,int>*> &matrizDistancias, int nNodos){
     vector<int>* aux;
     int poda = 0;
+    int nodos_totales = 0;
+    int nodos_podados = 0;
     algoritmoVoraz(matrizDistancias,nNodos,aux,poda);
+    cout << "LA PODA ES: " << poda << endl;
     //Se crea una cola con prioridad de nodos vivos
     priority_queue<Nodo*,vector<Nodo*>,comp> nVivos;
-    unordered_map<int, unordered_map<int,int>> m;
+    vector<vector<int>> m;
     //Se copia la matriz
     for (int i=1; i<=nNodos; i++){
+        vector<int> fila;
         for (int j=1; j<=nNodos; j++){
-            m[i][j] = (*matrizDistancias[i])[j];
+            fila.push_back((*matrizDistancias[i])[j]);
+            //m[i-1][j-1] = (*matrizDistancias[i])[j];
         }
-     }
+        m.push_back(fila);
+    }
+    //cout << "SE COPIA LA MATRIZ" << endl;
+
+    /*for (int i=0; i< nNodos; i++){
+        for (int j=0; j<nNodos; j++){
+            cout << m[i][j] << " " ;
+        }
+         cout << '\n';
+    }*/
     //Se crea el nodo raiz
     vector<int> camino;
     Nodo* raiz = crearNodo(m,camino,0,-1,1,nNodos);
+    //cout << "CREA NODO" << endl;
     raiz->coste = coste(raiz->matrizReducida,nNodos);
     nVivos.push(raiz);
-
+    bool fin = false;
     while(!nVivos.empty()){
         Nodo* minimo = nVivos.top();
         nVivos.pop();
@@ -352,18 +368,22 @@ Nodo* ramificacionPoda(unordered_map<int, unordered_map<int,int>*> &matrizDistan
         if(minimo->nivel == (nNodos -1)){
             //COMO ESTA SIEMPRE ORDENADO POR COSTE, NO ES NECESARIA UNA FUCNION DE COTA YA QUE SIEMPRE 
             //SE VA A COGER EL DE MENOR COSTE
+            cout << "EL NUMERO DE NODOS TOTALES ES DE: " << nodos_totales << endl;
+            cout << "EL NUMERO DE NODOS PODADOS ES DE: " << nodos_podados << endl;
             return minimo;
-        }
-        for (int i = 1; i <=nNodos; i++){
-            if(minimo->matrizReducida[cuidadActual][i] != INF){       
-                Nodo* hijo = crearNodo(minimo->matrizReducida, minimo->camino, minimo->nivel + 1, cuidadActual, i, nNodos);
-                hijo->coste = minimo->coste + minimo->matrizReducida[cuidadActual][i] + coste(hijo->matrizReducida,nNodos);
-                if (hijo->coste <= poda){
-                    nVivos.push(hijo);
-                }else{
-                    delete hijo;
+        }else{
+            for (int i = 0; i < nNodos; i++){
+                if(minimo->matrizReducida[cuidadActual-1][i] != INF){
+                    nodos_totales++;     
+                    Nodo* hijo = crearNodo(minimo->matrizReducida, minimo->camino, minimo->nivel + 1, cuidadActual, i + 1, nNodos);
+                    hijo->coste = minimo->coste + minimo->matrizReducida[cuidadActual-1][i] + coste(hijo->matrizReducida,nNodos);
+                    if (hijo->coste <= poda){
+                        nVivos.push(hijo);
+                    }else{
+                        nodos_podados++;
+                        delete hijo;
+                    }
                 }
-                
             }
         }
         delete minimo;
