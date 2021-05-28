@@ -326,8 +326,11 @@ Recorrido* programacionDinamica(unordered_map<int, unordered_map<int,int>*> &mat
 }
 
 Nodo* ramificacionPoda(unordered_map<int, unordered_map<int,int>*> &matrizDistancias, int nNodos){
+    vector<int>* aux;
+    int poda = 0;
+    algoritmoVoraz(matrizDistancias,nNodos,aux,poda);
     //Se crea una cola con prioridad de nodos vivos
-    priority_queue<Nodo*,vector<Nodo*>,comp> pq;
+    priority_queue<Nodo*,vector<Nodo*>,comp> nVivos;
     unordered_map<int, unordered_map<int,int>> m;
     //Se copia la matriz
     for (int i=1; i<=nNodos; i++){
@@ -339,11 +342,11 @@ Nodo* ramificacionPoda(unordered_map<int, unordered_map<int,int>*> &matrizDistan
     vector<int> camino;
     Nodo* raiz = crearNodo(m,camino,0,-1,1,nNodos);
     raiz->coste = coste(raiz->matrizReducida,nNodos);
-    pq.push(raiz);
+    nVivos.push(raiz);
 
-    while(!pq.empty()){
-        Nodo* minimo = pq.top();
-        pq.pop();
+    while(!nVivos.empty()){
+        Nodo* minimo = nVivos.top();
+        nVivos.pop();
         int cuidadActual = minimo->ciudadActual;
         //Si se han visitado todas las ciudades
         if(minimo->nivel == (nNodos -1)){
@@ -355,7 +358,12 @@ Nodo* ramificacionPoda(unordered_map<int, unordered_map<int,int>*> &matrizDistan
             if(minimo->matrizReducida[cuidadActual][i] != INF){       
                 Nodo* hijo = crearNodo(minimo->matrizReducida, minimo->camino, minimo->nivel + 1, cuidadActual, i, nNodos);
                 hijo->coste = minimo->coste + minimo->matrizReducida[cuidadActual][i] + coste(hijo->matrizReducida,nNodos);
-                pq.push(hijo);
+                if (hijo->coste <= poda){
+                    nVivos.push(hijo);
+                }else{
+                    delete hijo;
+                }
+                
             }
         }
         delete minimo;
