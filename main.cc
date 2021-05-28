@@ -134,13 +134,6 @@ int reducirColumna (vector<int> &matriz, int nCol, int nNodos){
     }
 }
 
-/*
-* Pre:  nNodos  = respresenta el numero de ciudades
-*       matriz  = vector que almacena la distancias entre las ciudades
-* Post: Devuelve coste de la reduccion de la matriz
-* Coms: Coste temporal  = O(n^2)
-*       Coste memoria   = 
-*/
 int coste (vector<int>  &matriz, int nNodos){
     int coste = 0;
     //Se reducen las filas de la matriz
@@ -154,18 +147,6 @@ int coste (vector<int>  &matriz, int nNodos){
     return coste;
 }
 
-/*
-* Pre:  camino  = camino recorrrido hasta llegar a ese nodo
-*       origen  = ciudad de donde venia el nodo padre
-*       destino = ciudad a la que corresponde el nodo 
-*       nivel   = nivel del arbol al que se encuentra ese nodo
-*       nNodos  = respresenta el numero de ciudades
-*       matriz  = vector que almacena la distancias entre las ciudades
-* Post: Devuelve un objeto de tipo Nodo con la matriz de distancias reducidas y la fila y columna
-        correspondiente a infinito
-* Coms: Coste temporal  = O(n^2)
-*       Coste memoria   = 
-*/
 Nodo* crearNodo(vector<int> &matriz, vector<int> camino, int nivel, int origen, int destino, int nNodos){  
     Nodo* nodo = new Nodo;
     nodo->camino = camino;
@@ -189,7 +170,6 @@ Nodo* crearNodo(vector<int> &matriz, vector<int> camino, int nivel, int origen, 
     return nodo;
 }
 
-// Estructura de datos para hacer un hash de una clase de tipo PairKey
 class comp {
 public:
     bool operator()(const Nodo* nodo1, const Nodo* nodo2) const {
@@ -287,25 +267,16 @@ void fuerzaBruta(vector<int> &matrizDistancias,const int nNodos, vector<int> &me
 }
 
 
-void algoritmoVoraz(vector<int> &matrizDistancias,const int nNodos, vector<int>* &mejorCamino, int &mejorDistancia){
+void algoritmoVoraz(unordered_map<int, unordered_map<int,int>*> &matrizDistancias,const int nNodos, vector<int>* &mejorCamino, int &mejorDistancia){
     bool visited[nNodos] = {false};
     int localMin; 
-    int index = 0;
-    int newIndex = 0;
+    int index = 1;
     int distancia = 0;
     vector<int>* camino = new vector<int>;
     for( int i = 0; i < nNodos - 1 ; i++)
-    {   
+    {
         visited[(index - 1)] = true;
         localMin = 2147483647; // Maximo valor de un entero
-        for (int j = 0; j < nNodos; j++){
-            if(matrizDistancias[index*nNodos + j] < localMin){
-                localMin = matrizDistancias[index*nNodos + j];
-                newIndex = j;
-            }
-
-        }
-
         for (auto a : *matrizDistancias[index])
         {
             if ((a.first != index) && (visited[a.first - 1] == false)){
@@ -405,7 +376,7 @@ Recorrido programacionDinamica(vector<int> &matrizDistancias, int N){
 //      problema y el coste del recorrido
 //Coms: Coste temporal  = O(n^2*2^n)
 //      Coste memoria   =
-Nodo* ramificacionPoda(vector<int> matrizDistancias, int nNodos){
+Nodo* ramificacionPoda(unordered_map<int, unordered_map<int,int>*> &matrizDistancias, int nNodos){
     vector<int>* aux;
     int poda = 0;
     int nodos_totales = 0;
@@ -416,16 +387,16 @@ Nodo* ramificacionPoda(vector<int> matrizDistancias, int nNodos){
     //Se crea una cola con prioridad de nodos vivos donde en la primera posicion se encuentra
     //el nodo de menor coste
     priority_queue<Nodo*,vector<Nodo*>,comp> nVivos;
-    //vector<int> m = matrizDistancias;
+    vector<int> m;
     //Se almacena la matriz en un vector
-    /*for (int i = 1; i <= nNodos; i++){
+    for (int i = 1; i <= nNodos; i++){
         for (int j = 1; j <= nNodos; j++){
             m.push_back((*matrizDistancias[i])[j]);
         }
-    }*/
+    }
     vector<int> camino;
     //Se crea el nodo raiz y se añade a la lista de nodos vivos
-    Nodo* raiz = crearNodo(matrizDistancias,camino,0,-1,1,nNodos);
+    Nodo* raiz = crearNodo(m,camino,0,-1,1,nNodos);
     raiz->coste = coste(raiz->matrizReducida,nNodos);
     nVivos.push(raiz);
     while(!nVivos.empty()){
@@ -485,7 +456,7 @@ int main(int argc, char *argv[] ){
                 reverse(solucion.camino.begin(),solucion.camino.end());
                 camino = solucion.camino;
             }else if(opt == "-rp"){ // Ramificacion y Poda
-                Nodo* sol = ramificacionPoda(matrizDistancias,nNodos);
+                Nodo* sol = ramificacionPoda(matrizDistancias2,nNodos);
                 camino = sol->camino;
                 distancia = sol->coste;
             }else{
