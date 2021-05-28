@@ -269,34 +269,52 @@ Recorrido* programacionDinamicaPrima(unordered_map<int, unordered_map<int,int>*>
     Recorrido* recorrido = new Recorrido;
     int distancia;
     int actual;
+    // Si no quedan ciudades por visitar
     if (S->empty()){
+        // Se calcula la distancia de la ciudad en la que estamos al origen
         recorrido->distancia = (*matrizDistancias[i])[1];
         recorrido->camino = new vector<int>;
         recorrido->camino->push_back(1);
         recorrido->camino->push_back(i);
     }else{
+        // Se busca en gtab si ya hemos estado en esta ciudad con los mismos posibles destinos
         PairKey key(i,S);
         auto element = gtab.find(key);
+        // Si hemos estado
         if (element != gtab.end()){
+            // Se devuelve el mejor camino y distancias que estaban almacenados en gtab
             recorrido->camino = new vector<int>(*element->second->camino);
             recorrido->distancia=element->second->distancia;
         }
+        // Si no hemos estado
         else{
-            recorrido->distancia=2147483647;
+            // Inicialmente distancia a infinito
+            recorrido->distancia=INF;
+            // Iteramos sobte los posibles destinos
             for (vector<int>::iterator j = S->begin() ; j != S->end(); ++j){
+                // Dejamos al principio del vector 'S' de destinos la ciudad a la que vamos a ir 'j'
                 actual = *j;
                 *j = *S->begin();
                 *S->begin() = actual;
-                vector<int>* Sprima = new vector<int>(S->begin()+1,S->end()); // Falta sacar j de S
+                // Almacenamos en 'Sprima' el resto de ciudades, 
+                // que seran los posibles destinos accesibles desde la ciudad a la que vamos a ir 'j'
+                vector<int>* Sprima = new vector<int>(S->begin()+1,S->end());
+                // Buscamos el mejor destino para i=j y S=Sprima
                 Recorrido* candidato;
                 candidato = programacionDinamicaPrima(matrizDistancias,gtab,actual,Sprima);
+                // Sumamos al recorrido actual la distancia de la ciudad actual 'i' a la ciudad a la que queremos ir
+                // junto con la menor distancia del mejor camino para i=j y S=Sprima
                 distancia = candidato->distancia + (*matrizDistancias[i])[actual];
+                // Si es la mejor distancia obtenida
                 if(distancia < recorrido->distancia){
                     recorrido->camino=new vector<int>(*candidato->camino);
                     recorrido->distancia=distancia;
                 }
             }
+            // Se añade la ciudad actual 'i' al camino
             recorrido->camino->push_back(i);
+            // Se almacena el resultado en gtab para recuperarlo en las siguientes repeticiones
+            // de esta combinacion
             gtab[key] = recorrido;
         }
     }
