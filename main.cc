@@ -184,7 +184,7 @@ public:
 //      En caso contrario se devolcera false
 //Coms: Coste temporal  = O(N)
 //      Coste memoria   = O(N)
-bool leerMatriz(const string nombreFichero, unordered_map<int, unordered_map<int,int>*> &matrizDistancias, int &nNodos){ //int matrizDistancias[nNodos][nNodos]
+bool leerMatriz(const string nombreFichero, vector<int> &matrizDistancias, int &nNodos){ //int matrizDistancias[nNodos][nNodos]
     // Abrimos el fichero de entrada
     ifstream f_entrada(nombreFichero);
     // Si el fichero de entrada se ha abierto correctamente
@@ -194,14 +194,10 @@ bool leerMatriz(const string nombreFichero, unordered_map<int, unordered_map<int
         nNodos = 0;
         while(getline(f_entrada,line)){
             // Separar distancias
-            unordered_map<int,int>* lineDistance = new unordered_map<int,int>;
             istringstream iss(line);
             nNodos++;
-            matrizDistancias[nNodos] = lineDistance;
-            int column=1;
             for (int distance; iss >> distance; ){
-                (*lineDistance)[column] = distance;
-                column++;
+                matrizDistancias.push_back(distance);
             }
         }
         // Cerramos el fichero de entrada
@@ -230,10 +226,10 @@ void inicializarCandiatos( const int nNodos, vector<int> &candidatos, int &sum){
     }
 }
 
-void mostrarSolucion(vector<int>* camino, int &distancia, std::chrono::microseconds &tEjecucion){
+void mostrarSolucion(vector<int> camino, int &distancia, std::chrono::microseconds &tEjecucion){
     cout<< "Minimal tour length: " << distancia << endl;
     cout << "Itinerary: 1-";
-    for (vector<int>::iterator it = camino->begin() ; it != camino->end(); ++it){
+    for (vector<int>::iterator it = camino.begin() ; it != camino.end(); ++it){
         if((*it) != 1){
             cout << *it << "-";
         }
@@ -244,7 +240,7 @@ void mostrarSolucion(vector<int>* camino, int &distancia, std::chrono::microseco
 }
 
 // Procedimiento que resuelve por fuerza bruta el problema del viajante de comercio
-void fuerzaBruta(unordered_map<int, unordered_map<int,int>*> &matrizDistancias,const int nNodos, vector<int>* &mejorCamino, int &mejorDistancia){
+void fuerzaBruta(vector<int> &matrizDistancias,const int nNodos, vector<int> &mejorCamino, int &mejorDistancia){
     vector<int> candidatos;
     int sum;
     inicializarCandiatos(nNodos,candidatos,sum);
@@ -252,17 +248,17 @@ void fuerzaBruta(unordered_map<int, unordered_map<int,int>*> &matrizDistancias,c
     int distancia;
     mejorDistancia = 2147483647; // Maximo valor de un entero
     while(std::next_permutation(candidatos.begin(), candidatos.end())){
-        vector<int>* camino = new vector<int>;
-        camino->push_back(1);
+        vector<int> camino;
+        camino.push_back(1);
         distancia = 0;
         for (vector<int>::iterator it = candidatos.begin() ; it != candidatos.end(); ++it){
-            anterior=camino->back();
-            camino->push_back(*it);
-            distancia += (*matrizDistancias[anterior])[*it];
+            anterior=camino.back();
+            camino.push_back(*it);
+            distancia += matrizDistancias[(anterior-1)*nNodos+(*it)-1];
         }
-        anterior=camino->back();
-        distancia += (*matrizDistancias[anterior])[1];
-        camino->push_back(1);
+        anterior=camino.back();
+        distancia += matrizDistancias[(anterior-1)*nNodos];
+        camino.push_back(1);
         if(distancia < mejorDistancia){
             mejorCamino = camino;
             mejorDistancia = distancia;
@@ -315,7 +311,7 @@ bool ciudadVisitable(int actual, int S){
 //      y el tiempo tardado
 //Coms: Coste temporal  = O(n^2*2^n)
 //      Coste memoria   =
-Recorrido programacionDinamicaPrima(unordered_map<int, unordered_map<int,int>*> &matrizDistancias, 
+Recorrido programacionDinamicaPrima(vector<int> &matrizDistancias, 
                                 unordered_map<PairKey,Recorrido,pairKeyHash> &gtab,
                                 int i, int S, int nNodos){
     Recorrido recorrido;
@@ -325,7 +321,7 @@ Recorrido programacionDinamicaPrima(unordered_map<int, unordered_map<int,int>*> 
     // Si no quedan ciudades por visitar
     if (S == 0){
         // Se calcula la distancia de la ciudad en la que estamos al origen
-        recorrido.distancia = (*matrizDistancias[i])[1];
+        recorrido.distancia = matrizDistancias[(i-1)*nNodos];
         recorrido.camino.push_back(1);
         recorrido.camino.push_back(i);
     }else{
@@ -350,7 +346,7 @@ Recorrido programacionDinamicaPrima(unordered_map<int, unordered_map<int,int>*> 
                     Recorrido candidato = programacionDinamicaPrima(matrizDistancias,gtab,iNext,SAux,nNodos);
                     // Sumamos al recorrido del mejor destino para iNext y SAux 
                     // la distancia de la ciudad actual i a la ciudad a la que queremos ir iNext
-                    distancia = candidato.distancia + (*matrizDistancias[i])[iNext];
+                    distancia = candidato.distancia + matrizDistancias[(i-1)*nNodos+iNext-1];
                     // Si es la mejor distancia obtenida
                     if(distancia < recorrido.distancia){
                         recorrido.camino=candidato.camino;
@@ -368,7 +364,7 @@ Recorrido programacionDinamicaPrima(unordered_map<int, unordered_map<int,int>*> 
     return recorrido;
 }
 
-Recorrido programacionDinamica(unordered_map<int, unordered_map<int,int>*> &matrizDistancias, int N){
+Recorrido programacionDinamica(vector<int> &matrizDistancias, int N){
         vector<int> S;
         int sum;
         inicializarCandiatos(N,S,sum);
@@ -443,24 +439,25 @@ int main(int argc, char *argv[] ){
     if(argc == 3){
         string opt = argv[1];
         string nombreFichero = argv[2];
-        unordered_map<int, unordered_map<int,int>*> matrizDistancias;
+        unordered_map<int, unordered_map<int,int>*> matrizDistancias2;
+        vector<int> matrizDistancias;
         int nNodos, distancia;
-        vector<int>* camino;
+        vector<int> camino;
         std::chrono::microseconds tEjecucion;
         if(leerMatriz(nombreFichero, matrizDistancias,nNodos)){
             std::chrono::steady_clock::time_point start = chrono::steady_clock::now();
             if (opt == "-fb"){      // Fuerza Bruta
                 fuerzaBruta(matrizDistancias,nNodos,camino,distancia);       
             }else if(opt == "-av"){ // Algortimo Voraz
-                algoritmoVoraz(matrizDistancias,nNodos,camino,distancia);
+                //algoritmoVoraz(matrizDistancias,nNodos,camino,distancia);
             }else if(opt == "-pd"){ // Programacion Dinamica
                 Recorrido solucion = programacionDinamica(matrizDistancias,nNodos);
                 distancia = solucion.distancia;
                 reverse(solucion.camino.begin(),solucion.camino.end());
-                camino = new vector<int>(solucion.camino);
+                camino = solucion.camino;
             }else if(opt == "-rp"){ // Ramificacion y Poda
-                Nodo* sol = ramificacionPoda(matrizDistancias,nNodos);
-                camino = new vector<int>(sol->camino);
+                Nodo* sol = ramificacionPoda(matrizDistancias2,nNodos);
+                camino = sol->camino;
                 distancia = sol->coste;
             }else{
                 cout << "Opcion " << opt << " es invalida -> tsp -[fb,av,pd,rp] <nombre de fichero>" << endl;    
