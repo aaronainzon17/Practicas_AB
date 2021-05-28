@@ -442,6 +442,7 @@ int main(int argc, char *argv[] ){
             }else if(opt == "-pd"){ // Programacion Dinamica
                 Recorrido solucion = programacionDinamica(matrizDistancias,nNodos);
                 distancia = solucion.distancia;
+                reverse(solucion.camino.begin(),solucion.camino.end());
                 camino = new vector<int>(solucion.camino);
             }else if(opt == "-rp"){ // Ramificacion y Poda
                 Nodo* sol = ramificacionPoda(matrizDistancias,nNodos);
