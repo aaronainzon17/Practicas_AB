@@ -287,35 +287,40 @@ void fuerzaBruta(vector<int> &matrizDistancias,const int nNodos, vector<int> &me
 }
 
 
-void algoritmoVoraz(vector<int> &matrizDistancias,const int nNodos, vector<int> &mejorCamino, int &mejorDistancia){
+void algoritmoVoraz(vector<int> &matrizDistancias,const int nNodos, vector<int>* &mejorCamino, int &mejorDistancia){
     bool visited[nNodos] = {false};
     int localMin; 
     int index = 0;
     int newIndex = 0;
     int distancia = 0;
-    int dis;
-    int indexAux;
-    vector<int> camino;
+    vector<int>* camino = new vector<int>;
     for( int i = 0; i < nNodos - 1 ; i++)
     {   
         visited[(index - 1)] = true;
-        localMin = INF; // Maximo valor de un entero
-        indexAux = index;
-        for ( int j = 1; j <= nNodos; j++){
-            if (!visited[j-1]){
-                dis = matrizDistancias[(indexAux-1)*nNodos+j-1];
-                if(dis < localMin)
+        localMin = 2147483647; // Maximo valor de un entero
+        for (int j = 0; j < nNodos; j++){
+            if(matrizDistancias[index*nNodos + j] < localMin){
+                localMin = matrizDistancias[index*nNodos + j];
+                newIndex = j;
+            }
+
+        }
+
+        for (auto a : *matrizDistancias[index])
+        {
+            if ((a.first != index) && (visited[a.first - 1] == false)){
+                if(a.second < localMin)
                 {
-                    localMin = dis;
-                    index = j;
+                    localMin = a.second;
+                    index = a.first;
                 }
             }
         }
         distancia += localMin; 
-        camino.push_back(index);
+        camino->push_back(index);
     }
     visited[(index - 1)] = true;
-    distancia += matrizDistancias[(index-1)*nNodos];
+    distancia += (*matrizDistancias[index])[1];
     mejorCamino = camino;
     mejorDistancia = distancia;
 }
@@ -400,8 +405,8 @@ Recorrido programacionDinamica(vector<int> &matrizDistancias, int N){
 //      problema y el coste del recorrido
 //Coms: Coste temporal  = O(n^2*2^n)
 //      Coste memoria   =
-Nodo* ramificacionPoda(vector<int> &matrizDistancias, int nNodos){
-    vector<int> aux;
+Nodo* ramificacionPoda(vector<int> matrizDistancias, int nNodos){
+    vector<int>* aux;
     int poda = 0;
     int nodos_totales = 0;
     int nodos_podados = 0;
@@ -411,7 +416,13 @@ Nodo* ramificacionPoda(vector<int> &matrizDistancias, int nNodos){
     //Se crea una cola con prioridad de nodos vivos donde en la primera posicion se encuentra
     //el nodo de menor coste
     priority_queue<Nodo*,vector<Nodo*>,comp> nVivos;
-    vector<int> m = matrizDistancias;
+    //vector<int> m = matrizDistancias;
+    //Se almacena la matriz en un vector
+    /*for (int i = 1; i <= nNodos; i++){
+        for (int j = 1; j <= nNodos; j++){
+            m.push_back((*matrizDistancias[i])[j]);
+        }
+    }*/
     vector<int> camino;
     //Se crea el nodo raiz y se añade a la lista de nodos vivos
     Nodo* raiz = crearNodo(matrizDistancias,camino,0,-1,1,nNodos);
@@ -467,7 +478,7 @@ int main(int argc, char *argv[] ){
             if (opt == "-fb"){      // Fuerza Bruta
                 fuerzaBruta(matrizDistancias,nNodos,camino,distancia);       
             }else if(opt == "-av"){ // Algortimo Voraz
-                algoritmoVoraz(matrizDistancias,nNodos,camino,distancia);
+                //algoritmoVoraz(matrizDistancias,nNodos,camino,distancia);
             }else if(opt == "-pd"){ // Programacion Dinamica
                 Recorrido solucion = programacionDinamica(matrizDistancias,nNodos);
                 distancia = solucion.distancia;
