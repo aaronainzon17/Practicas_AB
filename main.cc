@@ -57,7 +57,7 @@ struct PairKey
 // Estructura de datos para hacer un hash de una clase de tipo PairKey
 struct pairKeyHash
 {
-    //Pre:  clave   = respresenta la clave a la que se ke quiere aplicar el hash
+    //Pre:  clave   = respresenta la clave a la que se le quiere aplicar el hash
     //Post: Devuelve el hash del atributo clave de tipo PairKey
     //Coms: Coste temporal  = O(1)
     //      Coste memoria   = O(1)
@@ -73,23 +73,24 @@ class Nodo {
 public: 
     int ciudadActual;
     vector<int> camino;
-    vector<vector<int>> matrizReducida;
+    vector<int> matrizReducida;
     int coste;
     int nivel;
 };
 
-int reducirFila (vector<vector<int>> &matriz, int nFila, int nNodos){
+int reducirFila (vector<int> &matriz, int nFila, int nNodos){
     
-    int min = (matriz[nFila])[0];
+    int finFila = nFila*(nNodos+1);
+    int min = matriz[nFila*nNodos];
     for (int i = 1; i < nNodos; i++){
-        if ((matriz[nFila])[i] < min){
-            min = matriz[nFila][i];
+        if (matriz[(nNodos*nFila) + i] < min){
+            min = matriz[(nNodos*nFila) + i];
         }
     }
     if (min != INF){
         for (int i = 0; i < nNodos; i++){
-            if ((matriz[nFila])[i] != INF){
-                (matriz[nFila])[i] -= min;
+            if (matriz[(nNodos*nFila) + i] != INF){
+                matriz[(nNodos*nFila) + i] -= min;
             }
         } 
         return min; 
@@ -98,17 +99,17 @@ int reducirFila (vector<vector<int>> &matriz, int nFila, int nNodos){
     }    
 }
 
-int reducirColumna (vector<vector<int>> &matriz, int nCol, int nNodos){
-    int min = (matriz[0])[nCol];
+int reducirColumna (vector<int> &matriz, int nCol, int nNodos){
+    int min = matriz[nCol];
     for (int i = 1; i < nNodos; i++){
-        if ((matriz[i])[nCol] < min){
-            min = (matriz[i])[nCol];
+        if (matriz[i*nNodos + nCol] < min){
+            min = matriz[i*nNodos + nCol];
         }
     }
     if (min != INF){
         for (int i = 0; i < nNodos; i++){
-            if ((matriz[i])[nCol] != INF){
-                (matriz[i])[nCol] -= min; 
+            if (matriz[i*nNodos + nCol] != INF){
+                matriz[i*nNodos + nCol] -= min; 
             }
         }        
         return min;
@@ -117,7 +118,7 @@ int reducirColumna (vector<vector<int>> &matriz, int nCol, int nNodos){
     }
 }
 
-int coste (vector<vector<int>>  &matriz, int nNodos){
+int coste (vector<int>  &matriz, int nNodos){
     int coste = 0;
     //Se reducen las filas de la matriz
     for (int i = 0; i < nNodos; i++){
@@ -130,25 +131,24 @@ int coste (vector<vector<int>>  &matriz, int nNodos){
     return coste;
 }
 
-Nodo* crearNodo(vector<vector<int>> &matriz, vector<int> camino, int nivel, int origen, int destino, int nNodos){  
+Nodo* crearNodo(vector<int> &matriz, vector<int> camino, int nivel, int origen, int destino, int nNodos){  
     Nodo* nodo = new Nodo;
     nodo->camino = camino;
     nodo->matrizReducida = matriz;
-    //cout << "copia la matriz" << endl;
 
     if (nivel != 0){
         nodo->camino.push_back(destino);
         for (int i = 0; i < nNodos; i++){
-            nodo->matrizReducida[origen - 1][i] = INF;
-            nodo->matrizReducida[i][destino - 1] = INF;
+            nodo->matrizReducida[(origen - 1)*nNodos + i] = INF;
+            nodo->matrizReducida[(destino - 1)+ i*nNodos] = INF;
         }
     }else if (nivel == 0){
         for (int i = 0; i < nNodos; i++){
-            nodo->matrizReducida[i][i] = INF;
+            nodo->matrizReducida[i*nNodos + i] = INF;
         }
     }
 
-    nodo->matrizReducida[destino - 1][0] = INF;
+    nodo->matrizReducida[(destino - 1)*nNodos] = INF;
     nodo->nivel = nivel;
     nodo->ciudadActual = destino; 
     return nodo;
@@ -359,58 +359,55 @@ Recorrido programacionDinamica(unordered_map<int, unordered_map<int,int>*> &matr
         unordered_map<PairKey,Recorrido,pairKeyHash> gtab;
         return programacionDinamicaPrima(matrizDistancias,gtab,1,sum,N);
 }
-
+//Pre:  nNodos   = numero de ciudades
+//Post: Devuelve un objeto de clase Nodo, el cual contiene un camino optimo para el 
+//      problema y el coste del recorrido
+//Coms: Coste temporal  =
+//      Coste memoria   =
 Nodo* ramificacionPoda(unordered_map<int, unordered_map<int,int>*> &matrizDistancias, int nNodos){
     vector<int>* aux;
     int poda = 0;
     int nodos_totales = 0;
     int nodos_podados = 0;
+    //Se utiliza el algoritmo voraz para encontar una solucion suboptima y establecer un 
+    //valor para la poda
     algoritmoVoraz(matrizDistancias,nNodos,aux,poda);
-    cout << "LA PODA ES: " << poda << endl;
-    //Se crea una cola con prioridad de nodos vivos
+    //Se crea una cola con prioridad de nodos vivos donde en la primera posicion se encuentra
+    //el nodo de menor coste
     priority_queue<Nodo*,vector<Nodo*>,comp> nVivos;
-    vector<vector<int>> m;
-    //Se copia la matriz
-    for (int i=1; i<=nNodos; i++){
-        vector<int> fila;
-        for (int j=1; j<=nNodos; j++){
-            fila.push_back((*matrizDistancias[i])[j]);
-            //m[i-1][j-1] = (*matrizDistancias[i])[j];
+    vector<int> m;
+    //Se almacena la matriz en un vector
+    for (int i = 1; i <= nNodos; i++){
+        for (int j = 1; j <= nNodos; j++){
+            m.push_back((*matrizDistancias[i])[j]);
         }
-        m.push_back(fila);
     }
-    //cout << "SE COPIA LA MATRIZ" << endl;
-
-    /*for (int i=0; i< nNodos; i++){
-        for (int j=0; j<nNodos; j++){
-            cout << m[i][j] << " " ;
-        }
-         cout << '\n';
-    }*/
-    //Se crea el nodo raiz
     vector<int> camino;
+    //Se crea el nodo raiz y se añade a la lista de nodos vivos
     Nodo* raiz = crearNodo(m,camino,0,-1,1,nNodos);
-    //cout << "CREA NODO" << endl;
     raiz->coste = coste(raiz->matrizReducida,nNodos);
     nVivos.push(raiz);
-    bool fin = false;
     while(!nVivos.empty()){
+        //Se extrae de la cola de nodos vivos el nodo de menor coste
         Nodo* minimo = nVivos.top();
         nVivos.pop();
         int cuidadActual = minimo->ciudadActual;
-        //Si se han visitado todas las ciudades
+        //Si el nodo extraido ha visitado todas las ciudades
         if(minimo->nivel == (nNodos -1)){
-            //COMO ESTA SIEMPRE ORDENADO POR COSTE, NO ES NECESARIA UNA FUCNION DE COTA YA QUE SIEMPRE 
-            //SE VA A COGER EL DE MENOR COSTE
-            cout << "EL NUMERO DE NODOS TOTALES ES DE: " << nodos_totales << endl;
-            cout << "EL NUMERO DE NODOS PODADOS ES DE: " << nodos_podados << endl;
+            cout << "El numero de nodos totales generados es: " << nodos_totales << endl;
+            cout << "El numero de nodos podados es: " << nodos_podados << endl;
+            //Se devuelve el nodo como solucion optima
             return minimo;
         }else{
+            //Si el nodo no es solucion se generan sus hijos
             for (int i = 0; i < nNodos; i++){
-                if(minimo->matrizReducida[cuidadActual-1][i] != INF){
-                    nodos_totales++;     
+                // Se comprueba que el camino a ese nodo existe 
+                if(minimo->matrizReducida[(cuidadActual-1)*nNodos + i] != INF){
+                    nodos_totales++;
+                    //Se crea el nodo y se evalua su coste     
                     Nodo* hijo = crearNodo(minimo->matrizReducida, minimo->camino, minimo->nivel + 1, cuidadActual, i + 1, nNodos);
-                    hijo->coste = minimo->coste + minimo->matrizReducida[cuidadActual-1][i] + coste(hijo->matrizReducida,nNodos);
+                    hijo->coste = minimo->coste + minimo->matrizReducida[(cuidadActual-1)*nNodos + i] + coste(hijo->matrizReducida,nNodos);
+                    //Si el coste es menor que la funcion de poda se introduce a la lista de nodos vivos, si no, se poda
                     if (hijo->coste <= poda){
                         nVivos.push(hijo);
                     }else{
@@ -420,6 +417,7 @@ Nodo* ramificacionPoda(unordered_map<int, unordered_map<int,int>*> &matrizDistan
                 }
             }
         }
+        //Se elimina el nodo extraido de la cola
         delete minimo;
     }
     return 0;
