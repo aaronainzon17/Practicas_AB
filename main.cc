@@ -410,7 +410,6 @@ Nodo* ramificacionPoda(vector<int> &matrizDistancias, int nNodos){
     //Se crea una cola con prioridad de nodos vivos donde en la primera posicion se encuentra
     //el nodo de menor coste
     priority_queue<Nodo*,vector<Nodo*>,comp> nVivos;
-    vector<int> m = matrizDistancias;
     vector<int> camino;
     //Se crea el nodo raiz y se añade a la lista de nodos vivos
     Nodo* raiz = crearNodo(matrizDistancias,camino,0,-1,1,nNodos);
