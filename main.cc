@@ -28,7 +28,6 @@ struct PairKey
     int first;
     vector<int>* second;
     int sum;
-    int numEl;
  
     PairKey(int _first, vector<int>* _second)
     {
@@ -38,11 +37,10 @@ struct PairKey
         for (vector<int>::iterator it = _second->begin() ; it != _second->end(); ++it){
                     sum = sum + (1<<(*it));
         }
-        numEl = _second->size();
     }
 
     bool operator==(const PairKey &pk) const {
-        return (first == pk.first) && (numEl == pk.numEl) && (sum == pk.sum);
+        return (first == pk.first) && (sum == pk.sum);
     }
 };
 
@@ -53,8 +51,7 @@ struct pairKeyHash
     {
         size_t hash_first = hash<int>()(clave.first);
         size_t hash_second = hash<int>()(clave.sum);
-        size_t hash_third = hash<int>()(clave.numEl);
-        return hash_first ^ hash_second ^ hash_third;
+        return hash_first ^ hash_second;
     }
 };
 
