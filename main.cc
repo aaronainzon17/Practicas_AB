@@ -68,7 +68,7 @@ struct pairKeyHash
         return hash_first ^ hash_second;
     }
 };
-
+//Clase que define un nodo 
 class Nodo {
 public: 
     int ciudadActual;
@@ -78,6 +78,14 @@ public:
     int nivel;
 };
 
+/*
+* Pre:  nFila   = respresenta fila de la matriz de cuidades que se quiere reducir
+*       nNodos  = respresenta el numero de ciudades
+*       matriz  = vector que almacena la distancias entre las ciudades
+* Post: Devuelve el valor de la reduccion de la fila y la matriz de distancias resultante
+* Coms: Coste temporal  = O(n^2)
+*       Coste memoria   = 
+*/
 int reducirFila (vector<int> &matriz, int nFila, int nNodos){
     
     int finFila = nFila*(nNodos+1);
@@ -87,7 +95,7 @@ int reducirFila (vector<int> &matriz, int nFila, int nNodos){
             min = matriz[(nNodos*nFila) + i];
         }
     }
-    if (min != INF){
+    if (min != INF && min != 0){
         for (int i = 0; i < nNodos; i++){
             if (matriz[(nNodos*nFila) + i] != INF){
                 matriz[(nNodos*nFila) + i] -= min;
@@ -99,6 +107,14 @@ int reducirFila (vector<int> &matriz, int nFila, int nNodos){
     }    
 }
 
+/*
+* Pre:  nCol    = respresenta columna de la matriz de cuidades que se quiere reducir
+*       nNodos  = respresenta el numero de ciudades
+*       matriz  = vector que almacena la distancias entre las ciudades
+* Post: Devuelve el valor de la reduccion de la columna y la matriz de distancias resultante
+* Coms: Coste temporal  = O(n^2)
+*       Coste memoria   = 
+*/
 int reducirColumna (vector<int> &matriz, int nCol, int nNodos){
     int min = matriz[nCol];
     for (int i = 1; i < nNodos; i++){
@@ -106,7 +122,7 @@ int reducirColumna (vector<int> &matriz, int nCol, int nNodos){
             min = matriz[i*nNodos + nCol];
         }
     }
-    if (min != INF){
+    if (min != INF && min != 0){
         for (int i = 0; i < nNodos; i++){
             if (matriz[i*nNodos + nCol] != INF){
                 matriz[i*nNodos + nCol] -= min; 
@@ -297,7 +313,7 @@ bool ciudadVisitable(int actual, int S){
 //      S        = representa las ciudades a las que se puede ir
 //Post: Devuelve el tamaño del camino hamiltoniano de menor recorrido comenzando en el nodo 1
 //      y el tiempo tardado
-//Coms: Coste temporal  =
+//Coms: Coste temporal  = O(n^2*2^n)
 //      Coste memoria   =
 Recorrido programacionDinamicaPrima(unordered_map<int, unordered_map<int,int>*> &matrizDistancias, 
                                 unordered_map<PairKey,Recorrido,pairKeyHash> &gtab,
@@ -362,7 +378,7 @@ Recorrido programacionDinamica(unordered_map<int, unordered_map<int,int>*> &matr
 //Pre:  nNodos   = numero de ciudades
 //Post: Devuelve un objeto de clase Nodo, el cual contiene un camino optimo para el 
 //      problema y el coste del recorrido
-//Coms: Coste temporal  =
+//Coms: Coste temporal  = O(n^2*2^n)
 //      Coste memoria   =
 Nodo* ramificacionPoda(unordered_map<int, unordered_map<int,int>*> &matrizDistancias, int nNodos){
     vector<int>* aux;
