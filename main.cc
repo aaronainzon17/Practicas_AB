@@ -15,40 +15,56 @@
 #include <queue>
 
 using namespace std;
-#define INF 2147483647 // Maximo valor de un entero
 
+// Valor maximo de un entero
+#define INF 2147483647
+
+// Estructura de datos auxiliar que describe un recorrido
 struct Recorrido{
+    // Distancia recorrida
     int distancia;
+    // Ciudades visitadas
     vector<int> camino;
 };
 
-// Struct clave compuesta
+// Estructura de datos clave compuesta
 struct PairKey
 {
+    // Primera parte de la clave
     int first;
-    int sum;
+    // Segunda parte de la clave
+    int second;
  
-    PairKey(int _first, vector<int> _second)
+    //Pre:  _first   =   respresenta el primer elemento de la clave
+    //      _second  =   representa el segundo elemento de la clave
+    //Coms: Coste temporal  = O(1)
+    //      Coste memoria   = O(1)
+    PairKey(int _first, int _second)
     {
         first=_first;
-        sum=0;
-        for (vector<int>::iterator it = _second.begin() ; it != _second.end(); ++it){
-                    sum = sum + (1<<(*it));
-        }
+        second=_second;
     }
 
+    //Pre:  pk   = respresenta la clave con la que se quiere realizar la comparacion
+    //Post: Devuelve true si los dos atributos de la clave son iguales y false en caso contrario
+    //Coms: Coste temporal  = O(1)
+    //      Coste memoria   = O(1)
     bool operator==(const PairKey &pk) const {
-        return (first == pk.first) && (sum == pk.sum);
+        return (first == pk.first) && (second == pk.second);
     }
 };
 
-// Struct Hash para el struct PairKey
+// Estructura de datos para hacer un hash de una clase de tipo PairKey
 struct pairKeyHash
 {
+    //Pre:  clave   = respresenta la clave a la que se ke quiere aplicar el hash
+    //Post: Devuelve el hash del atributo clave de tipo PairKey
+    //Coms: Coste temporal  = O(1)
+    //      Coste memoria   = O(1)
     size_t operator() (const PairKey &clave) const
     {
         size_t hash_first = hash<int>()(clave.first);
-        size_t hash_second = hash<int>()(clave.sum);
+        size_t hash_second = hash<int>()(clave.second);
         return hash_first ^ hash_second;
     }
 };
@@ -145,7 +161,13 @@ public:
     }
 };
 
-// Procedimiento de lectura de matriz de distancias
+//Pre:  nombreFichero   = respresenta el nombre del fichero que se va a leer
+//Post: Si se ha podido leer el fichero se devuelve true y en
+//      matrizDistancias se encontraran las distancias entre las ciudades
+//      y en nNodos el numero de ciudades totales
+//      En caso contrario se devolcera false
+//Coms: Coste temporal  = O(N)
+//      Coste memoria   = O(N)
 bool leerMatriz(const string nombreFichero, unordered_map<int, unordered_map<int,int>*> &matrizDistancias, int &nNodos){ //int matrizDistancias[nNodos][nNodos]
     // Abrimos el fichero de entrada
     ifstream f_entrada(nombreFichero);
@@ -184,9 +206,11 @@ void mostrarMatriz(unordered_map<int, unordered_map<int,int>*> &matrizDistancias
      }
 }
 
-void inicializarCandiatos( const int nNodos, vector<int> &candidatos){
+void inicializarCandiatos( const int nNodos, vector<int> &candidatos, int &sum){
+    sum = 0;
     for (int i=2; i<=nNodos; i++){
         candidatos.push_back(i);
+        sum = sum + (1<<i);
     }
 }
 
@@ -206,7 +230,8 @@ void mostrarSolucion(vector<int>* camino, int &distancia, std::chrono::microseco
 // Procedimiento que resuelve por fuerza bruta el problema del viajante de comercio
 void fuerzaBruta(unordered_map<int, unordered_map<int,int>*> &matrizDistancias,const int nNodos, vector<int>* &mejorCamino, int &mejorDistancia){
     vector<int> candidatos;
-    inicializarCandiatos(nNodos,candidatos);
+    int sum;
+    inicializarCandiatos(nNodos,candidatos,sum);
     int anterior;
     int distancia;
     mejorDistancia = 2147483647; // Maximo valor de un entero
@@ -259,14 +284,30 @@ void algoritmoVoraz(unordered_map<int, unordered_map<int,int>*> &matrizDistancia
     mejorDistancia = distancia;
 }
 
+//Pre:  actual   = respresenta la ciudad a la que se quiere ir
+//      S        = representa las ciudades a las que se puede ir
+//Post: Devuelve true si la ciudad es visitable y false en caso contrario
+//Coms: Coste temporal  = O(1)
+//      Coste memoria   = O(1)
+bool ciudadVisitable(int actual, int S){
+    return S & (1<<actual);
+}
+
+//Pre:  actual   = respresenta la ciudad a la que se quiere ir
+//      S        = representa las ciudades a las que se puede ir
+//Post: Devuelve el tamaño del camino hamiltoniano de menor recorrido comenzando en el nodo 1
+//      y el tiempo tardado
+//Coms: Coste temporal  =
+//      Coste memoria   =
 Recorrido programacionDinamicaPrima(unordered_map<int, unordered_map<int,int>*> &matrizDistancias, 
                                 unordered_map<PairKey,Recorrido,pairKeyHash> &gtab,
-                                int i, vector<int> S){
+                                int i, int S, int nNodos){
     Recorrido recorrido;
     int distancia;
     int actual;
+    int SAux;
     // Si no quedan ciudades por visitar
-    if (S.empty()){
+    if (S == 0){
         // Se calcula la distancia de la ciudad en la que estamos al origen
         recorrido.distancia = (*matrizDistancias[i])[1];
         recorrido.camino.push_back(1);
@@ -278,31 +319,27 @@ Recorrido programacionDinamicaPrima(unordered_map<int, unordered_map<int,int>*> 
         // Si hemos estado
         if (element != gtab.end()){
             // Se devuelve el mejor camino y distancias que estaban almacenados en gtab
-            recorrido.camino = element->second.camino;
-            recorrido.distancia= element->second.distancia;
+            return element->second;
         }
         // Si no hemos estado
         else{
             // Inicialmente distancia a infinito
             recorrido.distancia=INF;
             // Iteramos sobte los posibles destinos
-            for (vector<int>::iterator j = S.begin() ; j != S.end(); ++j){
-                // Dejamos al principio del vector 'S' de destinos la ciudad a la que vamos a ir 'j'
-                actual = *j;
-                *j = *S.begin();
-                *S.begin() = actual;
-                // Almacenamos en 'Sprima' el resto de ciudades, 
-                // que seran los posibles destinos accesibles desde la ciudad a la que vamos a ir 'j'
-                vector<int> Sprima(S.begin()+1,S.end());
-                // Buscamos el mejor destino para i=j y S=Sprima
-                Recorrido candidato = programacionDinamicaPrima(matrizDistancias,gtab,actual,Sprima);
-                // Sumamos al recorrido actual la distancia de la ciudad actual 'i' a la ciudad a la que queremos ir
-                // junto con la menor distancia del mejor camino para i=j y S=Sprima
-                distancia = candidato.distancia + (*matrizDistancias[i])[actual];
-                // Si es la mejor distancia obtenida
-                if(distancia < recorrido.distancia){
-                    recorrido.camino=candidato.camino;
-                    recorrido.distancia=distancia;
+            for (int iNext = 1; iNext<=nNodos; iNext++){
+                if(ciudadVisitable(iNext,S)){
+                    // Eliminamos la ciudad de las ciudades disponibles
+                    SAux = S-(1<<iNext);
+                    // Buscamos el mejor destino para iNext y SAux
+                    Recorrido candidato = programacionDinamicaPrima(matrizDistancias,gtab,iNext,SAux,nNodos);
+                    // Sumamos al recorrido del mejor destino para iNext y SAux 
+                    // la distancia de la ciudad actual i a la ciudad a la que queremos ir iNext
+                    distancia = candidato.distancia + (*matrizDistancias[i])[iNext];
+                    // Si es la mejor distancia obtenida
+                    if(distancia < recorrido.distancia){
+                        recorrido.camino=candidato.camino;
+                        recorrido.distancia=distancia;
+                    }
                 }
             }
             // Se añade la ciudad actual 'i' al camino
@@ -317,9 +354,10 @@ Recorrido programacionDinamicaPrima(unordered_map<int, unordered_map<int,int>*> 
 
 Recorrido programacionDinamica(unordered_map<int, unordered_map<int,int>*> &matrizDistancias, int N){
         vector<int> S;
-        inicializarCandiatos(N,S);
+        int sum;
+        inicializarCandiatos(N,S,sum);
         unordered_map<PairKey,Recorrido,pairKeyHash> gtab;
-        return programacionDinamicaPrima(matrizDistancias,gtab,1,S);
+        return programacionDinamicaPrima(matrizDistancias,gtab,1,sum,N);
 }
 
 Nodo* ramificacionPoda(unordered_map<int, unordered_map<int,int>*> &matrizDistancias, int nNodos){
