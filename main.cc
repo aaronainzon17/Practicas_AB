@@ -26,15 +26,13 @@ struct Recorrido{
 struct PairKey
 {
     int first;
-    vector<int>* second;
     int sum;
  
-    PairKey(int _first, vector<int>* _second)
+    PairKey(int _first, vector<int> _second)
     {
         first=_first;
-        second=_second;
         sum=0;
-        for (vector<int>::iterator it = _second->begin() ; it != _second->end(); ++it){
+        for (vector<int>::iterator it = _second.begin() ; it != _second.end(); ++it){
                     sum = sum + (1<<(*it));
         }
     }
@@ -262,12 +260,12 @@ void algoritmoVoraz(unordered_map<int, unordered_map<int,int>*> &matrizDistancia
 
 Recorrido* programacionDinamicaPrima(unordered_map<int, unordered_map<int,int>*> &matrizDistancias, 
                                 unordered_map<PairKey,Recorrido*,pairKeyHash> &gtab,
-                                int i, vector<int>* &S){
+                                int i, vector<int> S){
     Recorrido* recorrido = new Recorrido;
     int distancia;
     int actual;
     // Si no quedan ciudades por visitar
-    if (S->empty()){
+    if (S.empty()){
         // Se calcula la distancia de la ciudad en la que estamos al origen
         recorrido->distancia = (*matrizDistancias[i])[1];
         recorrido->camino = new vector<int>;
@@ -288,14 +286,14 @@ Recorrido* programacionDinamicaPrima(unordered_map<int, unordered_map<int,int>*>
             // Inicialmente distancia a infinito
             recorrido->distancia=INF;
             // Iteramos sobte los posibles destinos
-            for (vector<int>::iterator j = S->begin() ; j != S->end(); ++j){
+            for (vector<int>::iterator j = S.begin() ; j != S.end(); ++j){
                 // Dejamos al principio del vector 'S' de destinos la ciudad a la que vamos a ir 'j'
                 actual = *j;
-                *j = *S->begin();
-                *S->begin() = actual;
+                *j = *S.begin();
+                *S.begin() = actual;
                 // Almacenamos en 'Sprima' el resto de ciudades, 
                 // que seran los posibles destinos accesibles desde la ciudad a la que vamos a ir 'j'
-                vector<int>* Sprima = new vector<int>(S->begin()+1,S->end());
+                vector<int> Sprima(S.begin()+1,S.end());
                 // Buscamos el mejor destino para i=j y S=Sprima
                 Recorrido* candidato;
                 candidato = programacionDinamicaPrima(matrizDistancias,gtab,actual,Sprima);
@@ -319,8 +317,8 @@ Recorrido* programacionDinamicaPrima(unordered_map<int, unordered_map<int,int>*>
 }
 
 Recorrido* programacionDinamica(unordered_map<int, unordered_map<int,int>*> &matrizDistancias, int N){
-        vector<int>* S = new vector<int>;
-        inicializarCandiatos(N,*S);
+        vector<int> S;
+        inicializarCandiatos(N,S);
         unordered_map<PairKey,Recorrido*,pairKeyHash> gtab;
         return programacionDinamicaPrima(matrizDistancias,gtab,1,S);
 }
