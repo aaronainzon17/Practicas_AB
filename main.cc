@@ -131,6 +131,12 @@ void fuerzaBruta(vector<int> &matrizDistancias,const int nNodos, vector<int> &me
  *                                                      * 
  *                                                      *
  * *****************************************************/
+//Pre:  nNodos  = respresenta el numero de ciudades
+//      mejorCamino  = vector que almacena el mejor camino encontrado
+//      mejorDistancia = representa la mejor distancia enocntrada por el algoritmo
+//Post: Devuelve el camino obtenido tras recorrer la matriz de distancias aplicando una heuristica voraz y su distancia
+//Coms: Coste temporal  = O(n^2)
+//      Coste memoria   = O(n)
 
 void algoritmoVoraz(vector<int> &matrizDistancias,const int nNodos, vector<int> &mejorCamino, int &mejorDistancia){
     bool visited[nNodos] = {false};
@@ -433,9 +439,14 @@ Nodo* crearNodo(vector<int> &matriz, vector<int> camino, int nivel, int origen, 
     return nodo;
 }
 
-// Estructura de datos para hacer un hash de una clase de tipo PairKey
+// Clase utlilizada para comparar los nodos
 class comp {
 public:
+    //Pre:  nodo1   = representa un objeto de tipo Nodo 
+    //      nodo2   = respresenta un objeto de tipo Nodo
+    //Post: Devuelve true si el coste del nodo1 es mayor al coste del nodo2
+    //Coms: Coste temporal  = O(1)
+    //      Coste memoria   = O(1)
     bool operator()(const Nodo* nodo1, const Nodo* nodo2) const {
         return nodo1->coste > nodo2->coste;
     }
