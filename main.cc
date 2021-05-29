@@ -22,18 +22,19 @@ using namespace std;
 /********************************************************
  *                                                      *
  *                                                      *
- *    FUNCIONES DE MANIPULACION DE LA MATRIZ DE DATOS   *
+ *         FUNCIONES DE MANIPULACION DE DATOS           *
  *                                                      * 
  *                                                      *
  * *****************************************************/
 
-//Pre:  nombreFichero   = respresenta el nombre del fichero que se va a leer
+//Pre:  nombreFichero respresenta el nombre del fichero que se va a leer
+//
 //Post: Si se ha podido leer el fichero se devuelve true y en
 //      matrizDistancias se encontraran las distancias entre las ciudades
 //      y en nNodos el numero de ciudades totales
 //      En caso contrario se devolcera false
-//Coms: Coste temporal  = O(N)
-//      Coste memoria   = O(N)
+//
+//Coste temporal  = O(N)
 bool leerMatriz(const string nombreFichero, vector<int> &matrizDistancias, int &nNodos){ //int matrizDistancias[nNodos][nNodos]
     // Abrimos el fichero de entrada
     ifstream f_entrada(nombreFichero);
@@ -58,24 +59,27 @@ bool leerMatriz(const string nombreFichero, vector<int> &matrizDistancias, int &
     return true;
 }
 
-// Procedimiento para mostrar la matriz de distancias
-void mostrarMatriz(unordered_map<int, unordered_map<int,int>*> &matrizDistancias, const int nNodos){
+//Pre:  matrizDistancias es un vector de enteros de tamaño nNodos * nNodos
+//
+//Post: Se muestra por pantalla la matriz
+//
+//Coste temporal  = O(N^2)
+void mostrarMatriz(vector<int> &matrizDistancias, const int nNodos){
      for (int i=1; i<=nNodos; i++){
         for (int j=1; j<=nNodos; j++){
-            cout << (*matrizDistancias[i])[j] << " " ;
+            cout << matrizDistancias[(i-1)*nNodos+j-1] << "\t" ;
         }
          cout << '\n';
      }
 }
 
-void inicializarCandiatos( const int nNodos, vector<int> &candidatos, int &sum){
-    sum = 0;
-    for (int i=2; i<=nNodos; i++){
-        candidatos.push_back(i);
-        sum = sum + (1<<i);
-    }
-}
-
+//Pre:  camino      = representa un vector ordenado de las ciudades por las que se ha pasado
+//      distancia   = distancia recorrrida en el camino
+//      tEjecucion  = tiempo de ejecucion del programa en us
+//
+//Post: Se muestam por pantalla los resultados
+//
+//Coste temporal  = O(N)
 void mostrarSolucion(vector<int> camino, int &distancia, std::chrono::microseconds &tEjecucion){
     cout<< "Minimal tour length: " << distancia << endl;
     cout << "Itinerary: 1-";
@@ -97,28 +101,58 @@ void mostrarSolucion(vector<int> camino, int &distancia, std::chrono::microsecon
  *                                                      *
  * *****************************************************/
 
-// Procedimiento que resuelve por fuerza bruta el problema del viajante de comercio
+//Pre:  nNodos entero mayor que 1
+//
+//Post: En sum se devuelve la suma de las ciudades como potencia de 2
+//      En candidatos se devuelve un vector que conteiene todas las ciudades a 
+//      las que se puede ir desde el nodo incial en un problema de dimension nNodos
+//
+//Coste temporal  = O(N)
+void inicializarCandiatos( const int nNodos, vector<int> &candidatos){
+    for (int i=2; i<=nNodos; i++){
+        candidatos.push_back(i);
+    }
+}
+
+//Pre:  nNodos  = respresenta el numero de ciudades
+//      matrizDistancias = representa las distancias entre las distintas ciudades (debe de ser dimension nNodos * nNodos)
+//
+//Post: Devuelve el camino obtenido tras recorrer la matriz de distancias aplicando un algoritmo de fuerza bruta
+//      mejorCamino  = vector que almacena el mejor camino encontrado
+//      mejorDistancia = representa la mejor distancia enocntrada por el algoritmo
+//
+//Coste temporal  = O(n!)
 void fuerzaBruta(vector<int> &matrizDistancias,const int nNodos, vector<int> &mejorCamino, int &mejorDistancia){
     vector<int> candidatos;
-    int sum;
-    inicializarCandiatos(nNodos,candidatos,sum);
+    // Se inicializa el vector con todas las posibles ciudades destino (todas menos la 1)
+    inicializarCandiatos(nNodos,candidatos);
     int anterior;
     int distancia;
-    mejorDistancia = 2147483647; // Maximo valor de un entero
+    // De momento, mejor distaria encontrada infinito
+    mejorDistancia = INF;
+    // Se prueban todas las permutaciones posibles del vector de candidatos
     while(std::next_permutation(candidatos.begin(), candidatos.end())){
         vector<int> camino;
+        // Primera ciudad es la 1 siempre
         camino.push_back(1);
+        // Se calcula la distancia total de la permitacion actual
         distancia = 0;
         for (vector<int>::iterator it = candidatos.begin() ; it != candidatos.end(); ++it){
             anterior=camino.back();
             camino.push_back(*it);
+            // Distancia de los anteriores mas la de la ciudad anterior a la ciudad actual
             distancia += matrizDistancias[(anterior-1)*nNodos+(*it)-1];
         }
+        // Distancia de los anteriores mas la de la ciudad anterior a 1
         anterior=camino.back();
         distancia += matrizDistancias[(anterior-1)*nNodos];
+        // Ultima ciudad es la 1 siempre
         camino.push_back(1);
+        // Si es la menor distancia que se ha encontrado
         if(distancia < mejorDistancia){
+            // Se almacena el camino
             mejorCamino = camino;
+            // Se almacena la distancia
             mejorDistancia = distancia;
         }
     }
@@ -131,42 +165,61 @@ void fuerzaBruta(vector<int> &matrizDistancias,const int nNodos, vector<int> &me
  *                                                      * 
  *                                                      *
  * *****************************************************/
+
 //Pre:  nNodos  = respresenta el numero de ciudades
+//      matrizDistancias = representa las distancias entre las distintas ciudades (debe de ser dimension nNodos * nNodos)
+//
+//Post: Devuelve el camino obtenido tras recorrer la matriz de distancias aplicando una heuristica voraz y su distancia
 //      mejorCamino  = vector que almacena el mejor camino encontrado
 //      mejorDistancia = representa la mejor distancia enocntrada por el algoritmo
-//Post: Devuelve el camino obtenido tras recorrer la matriz de distancias aplicando una heuristica voraz y su distancia
-//Coms: Coste temporal  = O(n^2)
-//      Coste memoria   = O(n)
-
+//
+//Coste temporal  = O(n^2)
 void algoritmoVoraz(vector<int> &matrizDistancias,const int nNodos, vector<int> &mejorCamino, int &mejorDistancia){
-    bool visited[nNodos] = {false};
     int localMin; 
-    int index = 1;
-    int distancia = 0;
     int dis;
     int indexAux;
     vector<int> camino;
+    // Se parte de la ciudad 1
+    int index = 1;
+    // Inicialmente la distancia recorrida es 0
+    int distancia = 0;
+    // Inicialmente no se ha visitado ninguna ciudad
+    bool visited[nNodos] = {false};
+    // Nos quedan por visitar N-1 ciudades
     for( int i = 0; i < nNodos - 1 ; i++)
     {   
+        // Marcar ciudad como visitada
         visited[(index - 1)] = true;
-        localMin = INF; // Maximo valor de un entero
+        // Minima distancia a la siguiente ciudad inicialmente infinita
+        localMin = INF; 
+        // Almacenamos la ciudad actual
         indexAux = index;
+        // Buscar sobre todas las ciudades en las que no hemos estado
         for ( int j = 1; j <= nNodos; j++){
             if (!visited[j-1]){
                 dis = matrizDistancias[(indexAux-1)*nNodos+j-1];
+                // Si es la mas cercana
                 if(dis < localMin)
                 {
+                    // Se almacena la distancia a la que esta
                     localMin = dis;
+                    // Se almacena la ciudad
                     index = j;
                 }
             }
         }
+        // Se suma el minimo local encontrado a la distancia que ya habiamos recorrido
         distancia += localMin; 
+        // Se añade al camino la ciudad a la que vamos
         camino.push_back(index);
     }
+    // Se marca como visitada la ultima ciudad
     visited[(index - 1)] = true;
+    // Se suma la disistancia de la ultima ciudad a 1 (que siempre es la ultima)
     distancia += matrizDistancias[(index-1)*nNodos];
+    // Se devuelve el mejor camino encontrado
     mejorCamino = camino;
+    // Se devuelve la mejor distancia encontrada
     mejorDistancia = distancia;
 }
 
@@ -196,8 +249,7 @@ struct PairKey
  
     //Pre:  _first   =   respresenta el primer elemento de la clave
     //      _second  =   representa el segundo elemento de la clave
-    //Coms: Coste temporal  = O(1)
-    //      Coste memoria   = O(1)
+    //Coste temporal  = O(1)
     PairKey(int _first, int _second)
     {
         first=_first;
@@ -205,9 +257,10 @@ struct PairKey
     }
 
     //Pre:  pk   = respresenta la clave con la que se quiere realizar la comparacion
+    //
     //Post: Devuelve true si los dos atributos de la clave son iguales y false en caso contrario
-    //Coms: Coste temporal  = O(1)
-    //      Coste memoria   = O(1)
+    //
+    //Coste temporal  = O(1)
     bool operator==(const PairKey &pk) const {
         return (first == pk.first) && (second == pk.second);
     }
@@ -217,9 +270,10 @@ struct PairKey
 struct pairKeyHash
 {
     //Pre:  clave   = respresenta la clave a la que se le quiere aplicar el hash
+    //
     //Post: Devuelve el hash del atributo clave de tipo PairKey
-    //Coms: Coste temporal  = O(1)
-    //      Coste memoria   = O(1)
+    //
+    //Coste temporal  = O(1)
     size_t operator() (const PairKey &clave) const
     {
         size_t hash_first = hash<int>()(clave.first);
@@ -230,19 +284,25 @@ struct pairKeyHash
 
 //Pre:  actual   = respresenta la ciudad a la que se quiere ir
 //      S        = representa las ciudades a las que se puede ir
+//
 //Post: Devuelve true si la ciudad es visitable y false en caso contrario
-//Coms: Coste temporal  = O(1)
-//      Coste memoria   = O(1)
+//
+//Coste temporal  = O(1)
 bool ciudadVisitable(int actual, int S){
     return S & (1<<actual);
 }
 
-//Pre:  actual   = respresenta la ciudad a la que se quiere ir
+
+//Pre:  nNodos  = respresenta el numero de ciudades
+//      matrizDistancias = representa las distancias entre las distintas ciudades (debe de ser dimension nNodos * nNodos)
+//      i        = respresenta la ciudad actual
 //      S        = representa las ciudades a las que se puede ir
-//Post: Devuelve el tamaño del camino hamiltoniano de menor recorrido comenzando en el nodo 1
-//      y el tiempo tardado
-//Coms: Coste temporal  = O(n^2*2^n)
-//      Coste memoria   =
+//      gtab     = tabla hash de clave compuesta (i,S) que almacena el mejor Recorrido para cada tupla
+//
+//Post: Se devuelve una estructura de tipo Recorrido que incluye un vector ordenado con las ciudades recorridas y 
+//      la distancia entera del camino recorrido
+//
+//Coste temporal  = O(n^2*2^n)
 Recorrido programacionDinamicaPrima(vector<int> &matrizDistancias, 
                                 unordered_map<PairKey,Recorrido,pairKeyHash> &gtab,
                                 int i, int S, int nNodos){
@@ -298,16 +358,18 @@ Recorrido programacionDinamicaPrima(vector<int> &matrizDistancias,
 
 //Pre:  matrizDistancias   = representa las distancias entre las ciudades
 //      N                  = representa la dimension del prblema como el numero de ciudades
-//Post: Devuelve el tamaño del camino hamiltoniano de menor recorrido comenzando en el nodo 1
-//      y el tiempo tardado
-//Coms: Coste temporal  = O(n^2*2^n)
-//      Coste memoria   =
+//
+//Post: Se devuelve una estructura de tipo Recorrido que incluye un vector ordenado con las ciudades recorridas y 
+//      la distancia entera del camino recorrido
+//
+//Coste temporal  = O(n^2*2^n)
 Recorrido programacionDinamica(vector<int> &matrizDistancias, int N){
-        vector<int> S;
-        int sum;
-        inicializarCandiatos(N,S,sum);
+        // Declaracion de la tabla hash de Recorridos de clave compuesta (i,S)
         unordered_map<PairKey,Recorrido,pairKeyHash> gtab;
-        return programacionDinamicaPrima(matrizDistancias,gtab,1,sum,N);
+        // Valor inicial de S
+        int S = (1<<(N+1))-4;
+        // Invocacion con (1,S)
+        return programacionDinamicaPrima(matrizDistancias,gtab,1,S,N);
 }
 
 /********************************************************
@@ -328,14 +390,13 @@ public:
     int nivel;
 };
 
-/*
-* Pre:  nFila   = respresenta fila de la matriz de cuidades que se quiere reducir
-*       nNodos  = respresenta el numero de ciudades
-*       matriz  = vector que almacena la distancias entre las ciudades
-* Post: Devuelve el valor de la reduccion de la fila y la matriz de distancias resultante
-* Coms: Coste temporal  = O(n^2)
-*       Coste memoria   = 
-*/
+// Pre:  nFila   = respresenta fila de la matriz de cuidades que se quiere reducir
+//       nNodos  = respresenta el numero de ciudades
+//       matriz  = vector que almacena la distancias entre las ciudades
+//
+// Post: Devuelve el valor de la reduccion de la fila y la matriz de distancias resultante
+//
+// Coste temporal  = O(n^2)
 int reducirFila (vector<int> &matriz, int nFila, int nNodos){
     
     int finFila = nFila*(nNodos+1);
@@ -357,14 +418,14 @@ int reducirFila (vector<int> &matriz, int nFila, int nNodos){
     }    
 }
 
-/*
-* Pre:  nCol    = respresenta columna de la matriz de cuidades que se quiere reducir
-*       nNodos  = respresenta el numero de ciudades
-*       matriz  = vector que almacena la distancias entre las ciudades
-* Post: Devuelve el valor de la reduccion de la columna y la matriz de distancias resultante
-* Coms: Coste temporal  = O(n^2)
-*       Coste memoria   = 
-*/
+
+// Pre:  nCol    = respresenta columna de la matriz de cuidades que se quiere reducir
+//       nNodos  = respresenta el numero de ciudades
+//       matriz  = vector que almacena la distancias entre las ciudades
+//
+// Post: Devuelve el valor de la reduccion de la columna y la matriz de distancias resultante
+//
+// Coste temporal  = O(n^2)
 int reducirColumna (vector<int> &matriz, int nCol, int nNodos){
     int min = matriz[nCol];
     for (int i = 1; i < nNodos; i++){
@@ -384,13 +445,12 @@ int reducirColumna (vector<int> &matriz, int nCol, int nNodos){
     }
 }
 
-/*
-* Pre:  nNodos  = respresenta el numero de ciudades
-*       matriz  = vector que almacena la distancias entre las ciudades
-* Post: Devuelve coste de la reduccion de la matriz
-* Coms: Coste temporal  = O(n^2)
-*       Coste memoria   = 
-*/
+// Pre:  nNodos  = respresenta el numero de ciudades
+//       matriz  = vector que almacena la distancias entre las ciudades
+//
+// Post: Devuelve coste de la reduccion de la matriz
+//
+// Coste temporal  = O(n^2)
 int coste (vector<int>  &matriz, int nNodos){
     int coste = 0;
     //Se reducen las filas de la matriz
@@ -404,18 +464,17 @@ int coste (vector<int>  &matriz, int nNodos){
     return coste;
 }
 
-/*
-* Pre:  camino  = camino recorrrido hasta llegar a ese nodo
-*       origen  = ciudad de donde venia el nodo padre
-*       destino = ciudad a la que corresponde el nodo 
-*       nivel   = nivel del arbol al que se encuentra ese nodo
-*       nNodos  = respresenta el numero de ciudades
-*       matriz  = vector que almacena la distancias entre las ciudades
-* Post: Devuelve un objeto de tipo Nodo con la matriz de distancias reducidas y la fila y columna
-        correspondiente a infinito
-* Coms: Coste temporal  = O(n^2)
-*       Coste memoria   = 
-*/
+// Pre:  camino  = camino recorrrido hasta llegar a ese nodo
+//       origen  = ciudad de donde venia el nodo padre
+//       destino = ciudad a la que corresponde el nodo 
+//       nivel   = nivel del arbol al que se encuentra ese nodo
+//       nNodos  = respresenta el numero de ciudades
+//       matriz  = vector que almacena la distancias entre las ciudades
+//
+// Post: Devuelve un objeto de tipo Nodo con la matriz de distancias reducidas y la fila y columna
+//       correspondiente a infinito
+//        
+// Coste temporal  = O(n^2)
 Nodo* crearNodo(vector<int> &matriz, vector<int> camino, int nivel, int origen, int destino, int nNodos){  
     Nodo* nodo = new Nodo;
     nodo->camino = camino;
@@ -444,19 +503,21 @@ class comp {
 public:
     //Pre:  nodo1   = representa un objeto de tipo Nodo 
     //      nodo2   = respresenta un objeto de tipo Nodo
+    //
     //Post: Devuelve true si el coste del nodo1 es mayor al coste del nodo2
-    //Coms: Coste temporal  = O(1)
-    //      Coste memoria   = O(1)
+    //
+    //Coste temporal  = O(1)
     bool operator()(const Nodo* nodo1, const Nodo* nodo2) const {
         return nodo1->coste > nodo2->coste;
     }
 };
 
 //Pre:  nNodos   = numero de ciudades
+//
 //Post: Devuelve un objeto de clase Nodo, el cual contiene un camino optimo para el 
 //      problema y el coste del recorrido
-//Coms: Coste temporal  = O(n^2*2^n)
-//      Coste memoria   =
+//
+//Coste temporal  = O(n^2*2^n)
 Nodo* ramificacionPoda(vector<int> &matrizDistancias, int nNodos){
     vector<int> aux;
     int poda = 0;
@@ -518,44 +579,58 @@ Nodo* ramificacionPoda(vector<int> &matrizDistancias, int nNodos){
  * *****************************************************/
 
 int main(int argc, char *argv[] ){
+    // El programa tiene 2 argumentos
     if(argc == 3){
-        string opt = argv[1];
-        string nombreFichero = argv[2];
-        unordered_map<int, unordered_map<int,int>*> matrizDistancias2;
-        vector<int> matrizDistancias;
+        vector<int> matrizDistancias, camino;
         int nNodos, distancia;
-        vector<int> camino;
         std::chrono::microseconds tEjecucion;
+        // Opcion introducida
+        string opt = argv[1];
+        // Fichero introducido
+        string nombreFichero = argv[2];
+        // Si se ha podido leer la matriz de distancias
         if(leerMatriz(nombreFichero, matrizDistancias,nNodos)){
+            // Empezar a contar el tiempo de ejecucion del algoritmo
             std::chrono::steady_clock::time_point start = chrono::steady_clock::now();
-            if (opt == "-fb"){      // Fuerza Bruta
+            // Fuerza Bruta
+            if (opt == "-fb"){
                 fuerzaBruta(matrizDistancias,nNodos,camino,distancia);       
-            }else if(opt == "-av"){ // Algortimo Voraz
+            // Algortimo Voraz
+            }else if(opt == "-av"){ 
                 algoritmoVoraz(matrizDistancias,nNodos,camino,distancia);
-            }else if(opt == "-pd"){ // Programacion Dinamica
+            // Programacion Dinamica
+            }else if(opt == "-pd"){ 
                 Recorrido solucion = programacionDinamica(matrizDistancias,nNodos);
                 distancia = solucion.distancia;
+                // Esta solcuion devuelve el camino del reves por su estructura 
+                // recursiva por lo que hay que darle la vuelta
                 reverse(solucion.camino.begin(),solucion.camino.end());
                 camino = solucion.camino;
-            }else if(opt == "-rp"){ // Ramificacion y Poda
+            // Ramificacion y Poda
+            }else if(opt == "-rp"){
                 Nodo* sol = ramificacionPoda(matrizDistancias,nNodos);
                 camino = sol->camino;
                 distancia = sol->coste;
+            // Opcion desconocida
             }else{
                 cout << "Opcion " << opt << " es invalida -> tsp -[fb,av,pd,rp] <nombre de fichero>" << endl;    
                 return -1;
             }
+            // Parar de contar el tiempo de ejecucion
             std::chrono::steady_clock::time_point end = chrono::steady_clock::now();
             tEjecucion = chrono::duration_cast<chrono::microseconds>(end - start);
+            // Mostrar la solucion encontrada
             mostrarSolucion(camino,distancia,tEjecucion);
         }
+        // Si no se pudo leer la matriz de confusion
         else{
             cout << "No se pudo abrir el fichero " << nombreFichero << " -> tsp -[fb,av,pd,rp] <nombre de fichero>" << endl;    
             return -1;    
         }
     }
+    // Si el numero de argumentos es incorrecto
     else{
-        cout << "Numero de parametros incorrecto -> tsp -[fb,av,pd,rp] <nombre de fichero>" << endl;    
+        cout << "Numero de argumentos incorrecto -> tsp -[fb,av,pd,rp] <nombre de fichero>" << endl;    
         return -1;
     }
     return 0;
