@@ -93,6 +93,32 @@ void mostrarSolucion(vector<int> camino, int &distancia, std::chrono::microsecon
     cout << "Tiempo de ejecucion: " <<  tEjec << " microsegundos" << endl;
 }
 
+//Pre:  nNodos es un entero mayor que 1
+//
+//Post: matrizDistancias conteine las distancias entre las N ciudades
+//      generadas aleatoriamente
+//
+//Coste temporal  = O(N)
+void alatoriaMatriz(const string nombreFichero, const int nNodos){
+    // Abrimos el fichero de entrada
+    ofstream f_salida(nombreFichero);
+    // Si el fichero de entrada se ha abierto correctamente
+    if(f_salida.is_open()){
+        for (int i=1; i<=nNodos; i++){
+            for (int j=1; j<=nNodos; j++){
+                if(i==j){
+                    f_salida << 0 << " ";
+                }else{
+                    f_salida << rand() %999+1 << " ";
+                }
+            }
+            f_salida << "\n";
+        }
+        // Cerramos el fichero de entrada
+        f_salida.close();
+    }
+}
+
 /********************************************************
  *                                                      *
  *                                                      *
@@ -624,13 +650,29 @@ int main(int argc, char *argv[] ){
         }
         // Si no se pudo leer la matriz de confusion
         else{
-            cout << "No se pudo abrir el fichero " << nombreFichero << " -> tsp -[fb,av,pd,rp] <nombre de fichero>" << endl;    
+            cout << "No se pudo abrir el fichero " << nombreFichero << " -> tsp -[fb,av,pd,rp,rm] <nombre de fichero> [dimension]" << endl;    
             return -1;    
         }
     }
-    // Si el numero de argumentos es incorrecto
+    else if (argc == 4){
+        int nNodos, distancia;
+        // Opcion introducida
+        string opt = argv[1];
+        // Fichero introducido
+        string nombreFichero = argv[2];
+        // Dimension del problema
+        nNodos = stoi(argv[3]);
+        // Random matrix
+        if(opt == "-rm"){
+            alatoriaMatriz(nombreFichero,nNodos);
+        // Opcion desconocida
+        }else{
+            cout << "Opcion " << opt << " es invalida -> tsp -[fb,av,pd,rp] <nombre de fichero> [dimension]" << endl;    
+            return -1;
+        }
+    }
     else{
-        cout << "Numero de argumentos incorrecto -> tsp -[fb,av,pd,rp] <nombre de fichero>" << endl;    
+        cout << "Numero de argumentos incorrecto -> tsp -[fb,av,pd,rp,rm] <nombre de fichero> [dimension]" << endl;    
         return -1;
     }
     return 0;
