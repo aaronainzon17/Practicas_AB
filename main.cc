@@ -410,10 +410,15 @@ Recorrido programacionDinamica(vector<int> &matrizDistancias, int N){
 //Clase que define un nodo 
 class Nodo {
 public: 
+    // Numero de cuidad a la que corresponde el nodo
     int ciudadActual;
+    //Camino recorrido hasta dicha ciudad
     vector<int> camino;
+    //Matriz de distancias reducida
     vector<int> matrizReducida;
+    //Coste del camino
     int coste;
+    //Nivel de profundidad en el arbol
     int nivel;
 };
 
@@ -501,7 +506,7 @@ int coste (vector<int>  &matriz, int nNodos){
 // Post: Devuelve un objeto de tipo Nodo con la matriz de distancias reducidas y la fila y columna
 //       correspondiente a infinito
 //        
-// Coste temporal  = O(N^2)
+// Coste temporal  = O(N)
 Nodo* crearNodo(vector<int> &matriz, vector<int> camino, int nivel, int origen, int destino, int nNodos){  
     Nodo* nodo = new Nodo;
     nodo->camino = camino;
